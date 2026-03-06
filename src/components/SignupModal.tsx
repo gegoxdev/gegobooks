@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const africanCountries = [
   'Nigeria','Ghana','Kenya','South Africa','Tanzania','Uganda','Ethiopia','Cameroon','Senegal',
@@ -17,6 +18,7 @@ interface SignupModalProps {
   tier: 'free' | 'priority' | 'founder';
   onClose: () => void;
   utmParams: { utm_source: string; utm_medium: string; utm_campaign: string };
+  onSignupComplete?: () => void;
 }
 
 const tierTitles: Record<string, string> = {
@@ -25,7 +27,7 @@ const tierTitles: Record<string, string> = {
   founder: 'Join the Founder Circle',
 };
 
-const SignupModal = ({ isOpen, tier, onClose, utmParams }: SignupModalProps) => {
+const SignupModal = ({ isOpen, tier, onClose, utmParams, onSignupComplete }: SignupModalProps) => {
   const [form, setForm] = useState({
     fullName: '',
     email: '',
@@ -56,18 +58,46 @@ const SignupModal = ({ isOpen, tier, onClose, utmParams }: SignupModalProps) => 
 
     setLoading(true);
 
-    // Simulate submission (Supabase integration to be added with Cloud)
-    await new Promise((r) => setTimeout(r, 1000));
-    const position = Math.floor(Math.random() * 3000) + 1;
+    try {
+      const { data, error } = await supabase
+        .from('waitlist_signups')
+        .insert({
+          full_name: form.fullName.trim(),
+          email: form.email.trim().toLowerCase(),
+          phone: form.phone.trim() || null,
+          business_type: form.businessType,
+          country: form.country,
+          tier,
+          utm_source: utmParams.utm_source || null,
+          utm_medium: utmParams.utm_medium || null,
+          utm_campaign: utmParams.utm_campaign || null,
+        })
+        .select('position')
+        .single();
 
-    setLoading(false);
+      if (error) {
+        if (error.code === '23505') {
+          setErrors({ email: 'This email is already on the waitlist!' });
+        } else {
+          setErrors({ email: 'Something went wrong. Please try again.' });
+        }
+        setLoading(false);
+        return;
+      }
 
-    if (tier === 'free') {
-      setSuccess(`You're on the list! We'll notify you when GegoBooks launches. Your position: #${position}`);
-    } else if (tier === 'priority') {
-      window.location.href = 'https://paystack.com/pay/gegobooks-priority';
-    } else {
-      window.location.href = 'https://paystack.com/pay/gegobooks-founder';
+      setLoading(false);
+      onSignupComplete?.();
+
+      if (tier === 'free') {
+        setSuccess(`You're on the list! We'll notify you when GegoBooks launches. Your position: #${data?.position || '—'}`);
+      } else if (tier === 'priority') {
+        window.location.href = 'https://paystack.com/pay/gegobooks-priority';
+      } else {
+        window.location.href = 'https://paystack.com/pay/gegobooks-founder';
+      }
+    } catch {
+      setErrors({ email: 'Network error. Please try again.' });
+      setLoading(false);
     }
   };
 
