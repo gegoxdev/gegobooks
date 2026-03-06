@@ -14,7 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      tier_counts: {
+        Row: {
+          claimed: number
+          id: string
+          total: number
+        }
+        Insert: {
+          claimed?: number
+          id: string
+          total: number
+        }
+        Update: {
+          claimed?: number
+          id?: string
+          total?: number
+        }
+        Relationships: []
+      }
+      waitlist_signups: {
+        Row: {
+          business_type: string
+          country: string
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          position: number | null
+          tier: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          business_type: string
+          country?: string
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          position?: number | null
+          tier?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          business_type?: string
+          country?: string
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          position?: number | null
+          tier?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
