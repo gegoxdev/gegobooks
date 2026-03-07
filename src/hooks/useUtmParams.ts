@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react';
 
 export const useUtmParams = () => {
-  const [utmParams, setUtmParams] = useState({
+  const [params, setParams] = useState({
     utm_source: '',
     utm_medium: '',
     utm_campaign: '',
+    ref: '',
   });
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    setUtmParams({
-      utm_source: params.get('utm_source') || '',
-      utm_medium: params.get('utm_medium') || '',
-      utm_campaign: params.get('utm_campaign') || '',
+    const p = new URLSearchParams(window.location.search);
+    setParams({
+      utm_source: p.get('utm_source') || '',
+      utm_medium: p.get('utm_medium') || '',
+      utm_campaign: p.get('utm_campaign') || '',
+      ref: p.get('ref') || '',
     });
   }, []);
 
-  return utmParams;
+  return params;
 };

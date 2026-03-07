@@ -14,66 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
-      tier_counts: {
+      admin_users: {
         Row: {
-          claimed: number
+          created_at: string
           id: string
-          total: number
+          user_id: string
         }
         Insert: {
-          claimed?: number
-          id: string
-          total: number
+          created_at?: string
+          id?: string
+          user_id: string
         }
         Update: {
-          claimed?: number
+          created_at?: string
           id?: string
-          total?: number
+          user_id?: string
         }
         Relationships: []
       }
       waitlist_signups: {
         Row: {
-          business_type: string
-          country: string
           created_at: string
           email: string
           full_name: string
           id: string
-          phone: string | null
-          position: number | null
-          tier: string
+          referral_code: string | null
+          referrals_count: number
+          referred_by: string | null
+          user_type: string
           utm_campaign: string | null
           utm_medium: string | null
           utm_source: string | null
+          waitlist_position: number | null
         }
         Insert: {
-          business_type: string
-          country?: string
           created_at?: string
           email: string
           full_name: string
           id?: string
-          phone?: string | null
-          position?: number | null
-          tier?: string
+          referral_code?: string | null
+          referrals_count?: number
+          referred_by?: string | null
+          user_type?: string
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null
+          waitlist_position?: number | null
         }
         Update: {
-          business_type?: string
-          country?: string
           created_at?: string
           email?: string
           full_name?: string
           id?: string
-          phone?: string | null
-          position?: number | null
-          tier?: string
+          referral_code?: string | null
+          referrals_count?: number
+          referred_by?: string | null
+          user_type?: string
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null
+          waitlist_position?: number | null
         }
         Relationships: []
       }
@@ -82,7 +82,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
