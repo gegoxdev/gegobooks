@@ -1,44 +1,40 @@
-const autoActions = [
-  'Records the transaction',
-  'Updates your daily sales',
-  'Tracks expenses',
-  'Calculates profit',
-  'Generates financial reports',
+const steps = [
+  { step: '1', icon: '🎙️', title: 'Speak', description: '"Sold bread ₦3,000"' },
+  { step: '2', icon: '🤖', title: 'AI Processes', description: 'Transaction recorded instantly' },
+  { step: '3', icon: '📊', title: 'See Results', description: 'Sales, expenses & profit updated' },
+  { step: '4', icon: '📈', title: 'Grow', description: 'Reports & insights on demand' },
 ];
 
 const SolutionSection = () => (
   <section className="py-16 md:py-24 bg-surface">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="fade-up max-w-3xl mx-auto text-center">
+      <div className="fade-up text-center max-w-3xl mx-auto mb-12">
         <h2 className="font-heading font-bold text-2xl md:text-4xl text-foreground">
           GegoBooks makes accounting as simple as talking.
         </h2>
         <p className="mt-4 font-body text-base text-muted">
-          With GegoBooks, you don't need to learn accounting software. Just speak naturally.
+          No spreadsheets. No complicated menus. Just speak naturally.
         </p>
       </div>
 
-      <div className="fade-up mt-12 max-w-lg mx-auto">
-        <div className="bg-soft-white rounded-2xl p-6 border border-border">
-          <p className="font-body text-sm text-muted mb-2">You say:</p>
-          <div className="bg-primary/10 rounded-xl px-4 py-3 mb-6 inline-block">
-            <p className="font-body font-medium text-primary">"Sold bread ₦3,000"</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+        {steps.map((s, i) => (
+          <div key={s.step} className={`fade-up stagger-${i + 1} text-center`}>
+            <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center text-3xl mb-3">
+              {s.icon}
+            </div>
+            <div className="inline-block bg-primary text-primary-foreground font-heading text-xs font-bold px-2 py-0.5 rounded-full mb-2">
+              Step {s.step}
+            </div>
+            <h3 className="font-heading font-bold text-lg text-foreground">{s.title}</h3>
+            <p className="font-body text-sm text-muted mt-1">{s.description}</p>
           </div>
-
-          <p className="font-body text-sm text-muted mb-3">GegoBooks automatically:</p>
-          <ul className="space-y-2">
-            {autoActions.map((action) => (
-              <li key={action} className="flex items-center gap-2 font-body text-sm text-foreground">
-                <span className="text-primary font-bold">✓</span> {action}
-              </li>
-            ))}
-          </ul>
-
-          <p className="mt-6 font-body text-sm text-muted italic">
-            All in seconds. No spreadsheets. No complicated menus. Just talk.
-          </p>
-        </div>
+        ))}
       </div>
+
+      <p className="fade-up mt-10 text-center font-body text-sm text-muted italic max-w-lg mx-auto">
+        All in seconds. No accounting knowledge required. Just talk.
+      </p>
     </div>
   </section>
 );

@@ -1,53 +1,38 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import ReferralDashboard from './ReferralDashboard';
 
-const africanCountries = [
-  'Nigeria','Ghana','Kenya','South Africa','Tanzania','Uganda','Ethiopia','Cameroon','Senegal',
-  'Côte d\'Ivoire','Rwanda','Egypt','Morocco','Algeria','Tunisia','Libya','Sudan','DR Congo',
-  'Angola','Mozambique','Zimbabwe','Zambia','Malawi','Mali','Burkina Faso','Niger','Chad','Guinea',
-  'Benin','Togo','Sierra Leone','Liberia','Central African Republic','Gabon','Republic of the Congo',
-  'Mauritania','Eritrea','Djibouti','Somalia','Comoros','Mauritius','Seychelles','Cape Verde',
-  'São Tomé and Príncipe','Equatorial Guinea','Eswatini','Lesotho','Botswana','Namibia','Madagascar',
-  'Gambia','Guinea-Bissau','South Sudan',
-];
-
-const businessTypes = ['Trader','Retail Shop','Market Seller','Service Business','Other'];
+const userTypes = [
+  { value: 'user', label: 'Business Owner' },
+  { value: 'accountant', label: 'Accountant' },
+  { value: 'both', label: 'Both' },
+] as const;
 
 interface SignupModalProps {
   isOpen: boolean;
-  tier: 'free' | 'priority' | 'founder';
   onClose: () => void;
-  utmParams: { utm_source: string; utm_medium: string; utm_campaign: string };
-  onSignupComplete?: () => void;
+  utmParams: { utm_source: string; utm_medium: string; utm_campaign: string; ref: string };
 }
 
-const tierTitles: Record<string, string> = {
-  free: 'Join the Free Waitlist',
-  priority: 'Get Priority Access',
-  founder: 'Join the Founder Circle',
-};
-
-const SignupModal = ({ isOpen, tier, onClose, utmParams, onSignupComplete }: SignupModalProps) => {
-  const [form, setForm] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    businessType: '',
-    country: 'Nigeria',
-  });
+const SignupModal = ({ isOpen, onClose, utmParams }: SignupModalProps) => {
+  const [form, setForm] = useState({ fullName: '', email: '', userType: 'user' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [signupData, setSignupData] = useState<{
+    referral_code: string;
+    waitlist_position: number;
+    referrals_count: number;
+  } | null>(null);
 
   if (!isOpen) return null;
 
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!form.fullName.trim()) errs.fullName = 'Full name is required';
+    if (form.fullName.trim().length > 200) errs.fullName = 'Name is too long';
     if (!form.email.trim()) errs.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Invalid email';
-    if (!form.businessType) errs.businessType = 'Business type is required';
-    if (!form.country) errs.country = 'Country is required';
+    if (form.email.length > 255) errs.email = 'Email is too long';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -55,7 +40,6 @@ const SignupModal = ({ isOpen, tier, onClose, utmParams, onSignupComplete }: Sig
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-
     setLoading(true);
 
     try {
@@ -64,15 +48,13 @@ const SignupModal = ({ isOpen, tier, onClose, utmParams, onSignupComplete }: Sig
         .insert({
           full_name: form.fullName.trim(),
           email: form.email.trim().toLowerCase(),
-          phone: form.phone.trim() || null,
-          business_type: form.businessType,
-          country: form.country,
-          tier,
+          user_type: form.userType,
+          referred_by: utmParams.ref || null,
           utm_source: utmParams.utm_source || null,
           utm_medium: utmParams.utm_medium || null,
           utm_campaign: utmParams.utm_campaign || null,
         })
-        .select('position')
+        .select('referral_code, waitlist_position, referrals_count')
         .single();
 
       if (error) {
@@ -85,16 +67,8 @@ const SignupModal = ({ isOpen, tier, onClose, utmParams, onSignupComplete }: Sig
         return;
       }
 
+      setSignupData(data);
       setLoading(false);
-      onSignupComplete?.();
-
-      if (tier === 'free') {
-        setSuccess(`You're on the list! We'll notify you when GegoBooks launches. Your position: #${data?.position || '—'}`);
-      } else if (tier === 'priority') {
-        window.location.href = 'https://paystack.com/pay/gegobooks-priority';
-      } else {
-        window.location.href = 'https://paystack.com/pay/gegobooks-founder';
-      }
     } catch {
       setErrors({ email: 'Network error. Please try again.' });
       setLoading(false);
@@ -102,9 +76,9 @@ const SignupModal = ({ isOpen, tier, onClose, utmParams, onSignupComplete }: Sig
   };
 
   const handleClose = () => {
-    setSuccess(null);
+    setSignupData(null);
     setErrors({});
-    setForm({ fullName: '', email: '', phone: '', businessType: '', country: 'Nigeria' });
+    setForm({ fullName: '', email: '', userType: 'user' });
     onClose();
   };
 
@@ -112,33 +86,21 @@ const SignupModal = ({ isOpen, tier, onClose, utmParams, onSignupComplete }: Sig
     <div className="fixed inset-0 z-[100] flex items-center justify-center" onClick={handleClose}>
       <div className="absolute inset-0 bg-secondary/60" />
       <div
-        className="relative bg-surface w-full max-w-md mx-4 md:rounded-2xl p-8 max-h-[90vh] overflow-y-auto md:max-h-none"
+        className="relative bg-surface w-full max-w-md mx-4 md:rounded-2xl p-8 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={handleClose}
-          className="absolute top-4 right-4 text-muted hover:text-foreground text-2xl"
-        >
-          ×
-        </button>
+        <button onClick={handleClose} className="absolute top-4 right-4 text-muted hover:text-foreground text-2xl">×</button>
 
-        {success ? (
-          <div className="text-center py-8">
-            <div className="text-5xl mb-4">🎉</div>
-            <p className="font-heading font-bold text-xl text-primary">{success}</p>
-            <button
-              onClick={handleClose}
-              className="mt-6 bg-primary text-primary-foreground font-body font-medium px-6 py-2 rounded-lg"
-            >
-              Done
-            </button>
-          </div>
+        {signupData ? (
+          <ReferralDashboard
+            referralCode={signupData.referral_code}
+            waitlistPosition={signupData.waitlist_position}
+            referralsCount={signupData.referrals_count}
+            onClose={handleClose}
+          />
         ) : (
           <>
-            <h3 className="font-heading font-bold text-xl text-foreground mb-6">
-              {tierTitles[tier]}
-            </h3>
-
+            <h3 className="font-heading font-bold text-xl text-foreground mb-6">Join the GegoBooks Waitlist</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <input
@@ -163,40 +125,23 @@ const SignupModal = ({ isOpen, tier, onClose, utmParams, onSignupComplete }: Sig
               </div>
 
               <div>
-                <input
-                  type="tel"
-                  placeholder="+234... (For WhatsApp updates)"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 bg-surface"
-                />
-              </div>
-
-              <div>
-                <select
-                  value={form.businessType}
-                  onChange={(e) => setForm({ ...form, businessType: e.target.value })}
-                  className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 bg-surface"
-                >
-                  <option value="">Select business type</option>
-                  {businessTypes.map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                <p className="font-body text-sm text-muted mb-2">I am a...</p>
+                <div className="flex rounded-lg border border-border overflow-hidden">
+                  {userTypes.map((t) => (
+                    <button
+                      key={t.value}
+                      type="button"
+                      onClick={() => setForm({ ...form, userType: t.value })}
+                      className={`flex-1 font-body text-sm py-2.5 transition-colors ${
+                        form.userType === t.value
+                          ? 'bg-primary text-primary-foreground font-semibold'
+                          : 'bg-surface text-muted hover:bg-muted/10'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
                   ))}
-                </select>
-                {errors.businessType && <p className="text-destructive text-xs mt-1 font-body">{errors.businessType}</p>}
-              </div>
-
-              <div>
-                <select
-                  value={form.country}
-                  onChange={(e) => setForm({ ...form, country: e.target.value })}
-                  className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 bg-surface"
-                >
-                  {africanCountries.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                {errors.country && <p className="text-destructive text-xs mt-1 font-body">{errors.country}</p>}
+                </div>
               </div>
 
               <button
@@ -210,7 +155,7 @@ const SignupModal = ({ isOpen, tier, onClose, utmParams, onSignupComplete }: Sig
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                 )}
-                {loading ? 'Submitting...' : tierTitles[tier]}
+                {loading ? 'Joining...' : 'Join the Waitlist'}
               </button>
             </form>
           </>

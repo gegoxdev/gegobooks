@@ -1,16 +1,7 @@
 const reasons = [
-  {
-    icon: '📱',
-    text: 'Smartphones are becoming common across Africa',
-  },
-  {
-    icon: '🧠',
-    text: 'AI voice technology has become powerful and affordable',
-  },
-  {
-    icon: '💼',
-    text: 'Millions of businesses need better financial tools to grow',
-  },
+  { icon: '📱', stat: '500M+', title: 'Smartphone users in Africa', description: 'Mobile-first is the only way forward' },
+  { icon: '🧠', stat: '10x', title: 'Cheaper AI voice tech', description: 'Powerful AI is now affordable for everyone' },
+  { icon: '💼', stat: '40M+', title: 'African SMEs need tools', description: 'A massive underserved market ready to grow' },
 ];
 
 const WhyNowSection = () => (
@@ -20,21 +11,20 @@ const WhyNowSection = () => (
         <h2 className="font-heading font-bold text-2xl md:text-4xl text-foreground">
           The timing is perfect.
         </h2>
-        <p className="mt-4 font-body text-base text-muted">
-          Three things are happening right now:
-        </p>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
         {reasons.map((r, i) => (
-          <div key={i} className={`fade-up stagger-${i + 1} text-center`}>
-            <div className="text-5xl mb-4">{r.icon}</div>
-            <p className="font-body text-base text-foreground font-medium">{r.text}</p>
+          <div key={i} className={`fade-up stagger-${i + 1} bg-soft-white rounded-xl border border-border p-6 text-center`}>
+            <div className="text-4xl mb-3">{r.icon}</div>
+            <p className="font-heading font-bold text-2xl text-primary">{r.stat}</p>
+            <h3 className="font-heading font-bold text-base text-foreground mt-1">{r.title}</h3>
+            <p className="font-body text-sm text-muted mt-1">{r.description}</p>
           </div>
         ))}
       </div>
 
-      <p className="fade-up mt-12 text-center font-body text-base text-muted max-w-2xl mx-auto">
+      <p className="fade-up mt-10 text-center font-body text-base text-muted max-w-2xl mx-auto">
         For the first time, it's possible to build an AI accountant for everyday businesses. That's what GegoBooks is doing.
       </p>
     </div>
