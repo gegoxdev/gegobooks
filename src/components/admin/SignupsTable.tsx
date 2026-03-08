@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Signup {
   id: string;
@@ -22,6 +24,7 @@ const SignupsTable = () => {
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
   const [sortAsc, setSortAsc] = useState(false);
   const [filter, setFilter] = useState('');
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   const fetchSignups = async () => {
     setLoading(true);
@@ -41,6 +44,19 @@ const SignupsTable = () => {
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc);
     else { setSortKey(key); setSortAsc(true); }
+  };
+
+  const handleDelete = async (signup: Signup) => {
+    if (!confirm(`Delete signup for ${signup.full_name} (${signup.email})? Positions below will be moved up.`)) return;
+    setDeleting(signup.id);
+    const { error } = await supabase.rpc('admin_delete_waitlist_signup', { signup_id: signup.id });
+    if (error) {
+      toast.error('Failed to delete signup: ' + error.message);
+    } else {
+      toast.success(`Deleted ${signup.full_name} and reranked waitlist`);
+      fetchSignups();
+    }
+    setDeleting(null);
   };
 
   const filtered = signups
@@ -72,7 +88,7 @@ const SignupsTable = () => {
   const columns: [string, string][] = [
     ['full_name', 'Name'], ['', 'Email'], ['', 'Type'], ['', 'Code'],
     ['referrals_count', 'Referrals'], ['waitlist_position', 'Position'],
-    ['', 'Referred By'], ['created_at', 'Date'],
+    ['', 'Referred By'], ['created_at', 'Date'], ['', ''],
   ];
 
   return (
@@ -101,9 +117,9 @@ const SignupsTable = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-border">
-                {columns.map(([key, label]) => (
+                {columns.map(([key, label], idx) => (
                   <th
-                    key={label}
+                    key={idx}
                     onClick={key ? () => handleSort(key as SortKey) : undefined}
                     className={`font-body text-xs font-semibold text-muted py-3 px-2 ${key ? 'cursor-pointer hover:text-foreground' : ''}`}
                   >
@@ -125,6 +141,16 @@ const SignupsTable = () => {
                   <td className="font-body text-sm text-muted py-3 px-2">#{s.waitlist_position}</td>
                   <td className="font-body text-xs text-muted py-3 px-2 font-mono">{s.referred_by || '—'}</td>
                   <td className="font-body text-xs text-muted py-3 px-2">{new Date(s.created_at).toLocaleDateString()}</td>
+                  <td className="py-3 px-2">
+                    <button
+                      onClick={() => handleDelete(s)}
+                      disabled={deleting === s.id}
+                      className="text-muted hover:text-destructive transition-colors disabled:opacity-50"
+                      title="Delete signup"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

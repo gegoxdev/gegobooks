@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { CheckCircle } from 'lucide-react';
 
 const userTypes = [
   { value: 'user', label: 'Business Owner' },
@@ -8,8 +9,24 @@ const userTypes = [
   { value: 'both', label: 'Both' },
 ] as const;
 
-const cards = [
+const tiers = [
   {
+    id: 'free',
+    title: 'Free Waitlist',
+    price: 'Free',
+    description: 'Join the waitlist and get access when we launch.',
+    features: [
+      'Standard waitlist position',
+      'Launch day access',
+      'Referral rewards',
+    ],
+    cta: 'Join Free Waitlist',
+    href: '', // handled by signup modal
+    recommended: false,
+    isFree: true,
+  },
+  {
+    id: 'priority',
     title: 'Priority Waitlist',
     price: '$1 (₦1,500)',
     description: 'Jump the queue and get priority early access.',
@@ -22,8 +39,10 @@ const cards = [
     cta: 'Get Priority Access',
     href: 'https://paystack.com/pay/gegobooks-priority',
     recommended: false,
+    isFree: false,
   },
   {
+    id: 'founder',
     title: 'Founder Circle',
     price: '$10 (₦15,000)',
     description: 'For the earliest believers in the future of AI accounting.',
@@ -37,8 +56,12 @@ const cards = [
     cta: 'Join Founder Circle',
     href: 'https://paystack.shop/pay/gegobooks-founders-circle',
     recommended: true,
+    isFree: false,
   },
 ];
+
+// Map tier IDs to hierarchy: higher = better
+const tierRank: Record<string, number> = { free: 0, priority: 1, founder: 2 };
 
 const WaitlistTiersSection = () => {
   const navigate = useNavigate();
@@ -47,12 +70,46 @@ const WaitlistTiersSection = () => {
   const [form, setForm] = useState({ fullName: '', email: '', userType: 'user' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formLoading, setFormLoading] = useState(false);
+  const [userTier, setUserTier] = useState<string | null>(null);
+  const [isOnWaitlist, setIsOnWaitlist] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const handlePayClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+  useEffect(() => {
+    const checkStatus = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setIsLoggedIn(false); return; }
+      setIsLoggedIn(true);
+
+      const [waitlistRes, profileRes] = await Promise.all([
+        supabase.rpc('get_my_waitlist_status'),
+        supabase.from('profiles').select('tier').eq('user_id', session.user.id).maybeSingle(),
+      ]);
+
+      if (waitlistRes.data && Array.isArray(waitlistRes.data) && waitlistRes.data.length > 0) {
+        setIsOnWaitlist(true);
+      }
+      if (profileRes.data) {
+        setUserTier(profileRes.data.tier || 'free');
+      }
+    };
+
+    checkStatus();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { checkStatus(); });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleTierClick = async (e: React.MouseEvent, tier: typeof tiers[0]) => {
     e.preventDefault();
-    const href = e.currentTarget.href;
-    const { data: { session } } = await supabase.auth.getSession();
 
+    if (tier.isFree) {
+      // Scroll to signup section
+      const el = document.getElementById('waitlist-signup');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate('/login?redirect=waitlist-tiers');
       return;
@@ -61,12 +118,10 @@ const WaitlistTiersSection = () => {
     // Check if user is on the waitlist
     const { data } = await supabase.rpc('get_my_waitlist_status');
     if (data && Array.isArray(data) && data.length > 0) {
-      // Already on waitlist — proceed to payment
-      window.open(href, '_blank', 'noopener,noreferrer');
+      window.open(tier.href, '_blank', 'noopener,noreferrer');
     } else {
-      // Not on waitlist — show inline form
       setForm((f) => ({ ...f, email: session.user.email || '', fullName: session.user.user_metadata?.full_name || '' }));
-      setPendingHref(href);
+      setPendingHref(tier.href);
       setShowWaitlistForm(true);
     }
   };
@@ -94,7 +149,6 @@ const WaitlistTiersSection = () => {
 
     if (error) {
       if (error.code === '23505') {
-        // Already on waitlist — just proceed
         window.open(pendingHref, '_blank', 'noopener,noreferrer');
         setShowWaitlistForm(false);
       } else {
@@ -106,7 +160,15 @@ const WaitlistTiersSection = () => {
 
     setFormLoading(false);
     setShowWaitlistForm(false);
+    setIsOnWaitlist(true);
     window.open(pendingHref, '_blank', 'noopener,noreferrer');
+  };
+
+  const isTierJoined = (tierId: string) => {
+    if (!isLoggedIn || !isOnWaitlist || !userTier) return false;
+    const currentRank = tierRank[userTier] ?? 0;
+    const tierCardRank = tierRank[tierId] ?? 0;
+    return tierCardRank <= currentRank;
   };
 
   return (
@@ -122,56 +184,72 @@ const WaitlistTiersSection = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            {cards.map((card, i) => (
-              <div
-                key={card.title}
-                className={`fade-up stagger-${i + 1} rounded-xl border p-6 flex flex-col ${
-                  card.recommended
-                    ? 'bg-surface border-accent shadow-lg ring-2 ring-accent/20'
-                    : 'bg-surface border-primary shadow-sm ring-2 ring-primary/20'
-                }`}
-              >
-                {card.recommended && (
-                  <span className="inline-block self-start bg-accent text-accent-foreground font-body text-xs font-semibold px-3 py-1 rounded-full mb-3">
-                    ⭐ Recommended
-                  </span>
-                )}
-                <h3 className="font-heading font-bold text-xl text-foreground">{card.title}</h3>
-                <p className={`font-heading font-bold text-3xl mt-2 ${card.recommended ? 'text-accent' : 'text-primary'}`}>
-                  {card.price}
-                </p>
-                <p className="font-body text-sm text-muted mt-2">{card.description}</p>
+          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            {tiers.map((card, i) => {
+              const joined = isTierJoined(card.id);
 
-                <ul className="mt-4 space-y-2 flex-1">
-                  {card.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 font-body text-sm text-foreground">
-                      <span className={`font-bold mt-0.5 ${card.recommended ? 'text-accent' : 'text-primary'}`}>✓</span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-
-                <a
-                  href={card.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => handlePayClick(e)}
-                  className={`mt-6 w-full font-body font-medium py-3 rounded-lg transition-opacity hover:opacity-90 text-center block ${
-                    card.recommended
-                      ? 'bg-accent text-accent-foreground'
-                      : 'bg-primary text-primary-foreground'
+              return (
+                <div
+                  key={card.title}
+                  className={`fade-up stagger-${i + 1} rounded-xl border p-6 flex flex-col ${
+                    joined
+                      ? 'bg-muted/5 border-border opacity-80'
+                      : card.recommended
+                        ? 'bg-surface border-accent shadow-lg ring-2 ring-accent/20'
+                        : card.isFree
+                          ? 'bg-surface border-border shadow-sm'
+                          : 'bg-surface border-primary shadow-sm ring-2 ring-primary/20'
                   }`}
                 >
-                  {card.cta}
-                </a>
-              </div>
-            ))}
+                  {card.recommended && !joined && (
+                    <span className="inline-block self-start bg-accent text-accent-foreground font-body text-xs font-semibold px-3 py-1 rounded-full mb-3">
+                      ⭐ Recommended
+                    </span>
+                  )}
+                  <h3 className="font-heading font-bold text-xl text-foreground">{card.title}</h3>
+                  <p className={`font-heading font-bold text-3xl mt-2 ${
+                    joined ? 'text-muted' : card.recommended ? 'text-accent' : card.isFree ? 'text-foreground' : 'text-primary'
+                  }`}>
+                    {card.price}
+                  </p>
+                  <p className="font-body text-sm text-muted mt-2">{card.description}</p>
+
+                  <ul className="mt-4 space-y-2 flex-1">
+                    {card.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2 font-body text-sm text-foreground">
+                        <span className={`font-bold mt-0.5 ${joined ? 'text-muted' : card.recommended ? 'text-accent' : card.isFree ? 'text-foreground' : 'text-primary'}`}>✓</span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {joined ? (
+                    <div className="mt-6 w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-primary/10 text-primary font-body font-medium text-sm">
+                      <CheckCircle className="w-4 h-4" />
+                      You've joined this tier
+                    </div>
+                  ) : (
+                    <button
+                      onClick={(e) => handleTierClick(e as any, card)}
+                      className={`mt-6 w-full font-body font-medium py-3 rounded-lg transition-opacity hover:opacity-90 text-center block ${
+                        card.recommended
+                          ? 'bg-accent text-accent-foreground'
+                          : card.isFree
+                            ? 'bg-secondary text-secondary-foreground'
+                            : 'bg-primary text-primary-foreground'
+                      }`}
+                    >
+                      {card.cta}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Waitlist details modal for authenticated users not yet on the waitlist */}
+      {/* Waitlist details modal */}
       {showWaitlistForm && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center" onClick={() => setShowWaitlistForm(false)}>
           <div className="absolute inset-0 bg-secondary/60" />
