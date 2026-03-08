@@ -152,6 +152,10 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
       if (inviteToken) {
         await handleAcceptByToken(inviteToken, data.user.id);
       }
+    } else if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
+      // Repeated signup — user already has an account
+      setError('An account with this email already exists. Please sign in instead.');
+      setMode('login');
     } else {
       // Email verification required — show inline OTP
       setOtpMode(true);
