@@ -69,7 +69,12 @@ const SignupModal = ({ isOpen, onClose, utmParams }: SignupModalProps) => {
       // Fetch signup data via secure RPC
       const { data } = await supabase.rpc('get_my_signup', { p_email: emailNormalized });
       if (data && Array.isArray(data) && data.length > 0) {
-        setSignupData(data[0] as any);
+        const row = data[0] as any;
+        setSignupData({
+          referral_code: row.referral_code,
+          waitlist_position: row.waitlist_position,
+          referrals_count: row.referrals_count,
+        });
       }
       setLoading(false);
     } catch {
