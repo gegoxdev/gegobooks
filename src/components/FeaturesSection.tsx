@@ -37,7 +37,7 @@ const FeaturesSection = () => (
         {features.map((f, i) => (
           <div
             key={f.title}
-            className={`fade-up stagger-${i + 1} bg-surface rounded-xl shadow-sm border border-border p-6`}
+            className={`${i % 2 === 0 ? 'fade-left' : 'fade-right'} stagger-${Math.min(i + 1, 4)} bg-surface rounded-xl shadow-sm border border-border p-6`}
           >
             <div className="text-3xl mb-3">{f.icon}</div>
             <h3 className="font-heading font-bold text-lg text-foreground mb-2">{f.title}</h3>
