@@ -18,16 +18,19 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          role: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          role?: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          role?: string
           user_id?: string
         }
         Relationships: []
@@ -247,6 +250,7 @@ export type Database = {
         Returns: undefined
       }
       cancel_account_deletion: { Args: never; Returns: undefined }
+      get_admin_role: { Args: { _user_id: string }; Returns: string }
       get_admin_signups_with_tiers: {
         Args: never
         Returns: {
