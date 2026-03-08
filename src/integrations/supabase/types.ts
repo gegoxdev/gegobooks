@@ -242,6 +242,15 @@ export type Database = {
           waitlist_position: number
         }[]
       }
+      get_tier_counts: {
+        Args: never
+        Returns: {
+          current_count: number
+          max_capacity: number
+          tier_id: string
+          tier_label: string
+        }[]
+      }
       get_waitlist_growth: {
         Args: { timeframe: string }
         Returns: {
