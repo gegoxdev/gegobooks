@@ -36,7 +36,7 @@ const cards = [
 
 const WaitlistTiersSection = () => {
   const navigate = useNavigate();
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  
 
   const handlePayClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
