@@ -257,7 +257,8 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
                     const RoleIcon = config.icon;
                     return (
                       <tr key={a.admin_id} className="border-b border-border/50 hover:bg-soft-white transition-colors">
-                        <td className="font-body text-sm text-foreground py-3 px-2">{a.email}</td>
+                        <td className="font-body text-sm text-foreground py-3 px-2">{a.full_name || '—'}</td>
+                        <td className="font-body text-sm text-muted py-3 px-2">{a.email}</td>
                         <td className="py-3 px-2 relative">
                           {isMaster ? (
                             <>
