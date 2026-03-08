@@ -60,6 +60,12 @@ Deno.serve(async (req) => {
       referralConvRes,
       countryRes,
       userStatsRes,
+      arpuRes,
+      convRateRes,
+      avgRefRes,
+      churnRes,
+      funnelRes,
+      sourcesRes,
     ] = await Promise.all([
       supabaseAdmin.from('total_waitlist_users').select('*').single(),
       supabaseAdmin.from('todays_signups').select('*').single(),
@@ -72,6 +78,12 @@ Deno.serve(async (req) => {
       supabaseAdmin.from('referral_conversion').select('*').single(),
       supabaseAdmin.from('country_distribution').select('*'),
       supabaseAdmin.rpc('get_admin_user_stats'),
+      supabaseAdmin.from('arpu').select('*').single(),
+      supabaseAdmin.from('paid_conversion_rate').select('*').single(),
+      supabaseAdmin.from('avg_referrals_per_user').select('*').single(),
+      supabaseAdmin.from('churn_rate').select('*').single(),
+      supabaseAdmin.from('tier_upgrade_funnel').select('*'),
+      supabaseAdmin.from('signup_source_breakdown').select('*'),
     ]);
 
     // Fetch signup growth (daily)
