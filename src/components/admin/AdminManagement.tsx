@@ -89,8 +89,20 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
       },
     });
 
-    if (error || data?.error) {
-      toast.error(data?.error || error?.message || 'Failed to send invite');
+    if (error) {
+      let errorMessage = error.message || 'Failed to send invite';
+      const errorResponse = (error as any)?.context;
+      if (errorResponse instanceof Response) {
+        try {
+          const parsed = await errorResponse.json();
+          if (parsed?.error) errorMessage = parsed.error;
+        } catch {
+          // ignore parse errors and use fallback message
+        }
+      }
+      toast.error(errorMessage);
+    } else if (data?.error) {
+      toast.error(data.error);
     } else {
       toast.success(data.message);
       if (data.inviteLink && !data.emailSent) {
