@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import logo from '@/assets/gegobooks-logo.jpg';
+import logo from '@/assets/gegobooks-logo.png';
 
 const VerifyOTP = () => {
   const navigate = useNavigate();
