@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, ArrowUpCircle, Users } from 'lucide-react';
+import { toast } from 'sonner';
 
 const userTypes = [
   { value: 'user', label: 'Business Owner' },
@@ -21,7 +22,8 @@ const tiers = [
       'Referral rewards',
     ],
     cta: 'Join Free Waitlist',
-    href: '', // handled by signup modal
+    upgradeCta: 'Current Tier',
+    href: '',
     recommended: false,
     isFree: true,
   },
@@ -37,6 +39,7 @@ const tiers = [
       'Early adopter perks',
     ],
     cta: 'Get Priority Access',
+    upgradeCta: 'Upgrade to Priority',
     href: 'https://paystack.com/pay/gegobooks-priority',
     recommended: false,
     isFree: false,
@@ -54,6 +57,7 @@ const tiers = [
       'Name listed on GegoBooks Wall of Founders',
     ],
     cta: 'Join Founder Circle',
+    upgradeCta: 'Upgrade to Founder Circle',
     href: 'https://paystack.shop/pay/gegobooks-founders-circle',
     recommended: true,
     isFree: false,
@@ -62,6 +66,13 @@ const tiers = [
 
 // Map tier IDs to hierarchy: higher = better
 const tierRank: Record<string, number> = { free: 0, priority: 1, founder: 2 };
+
+interface TierCount {
+  tier_id: string;
+  tier_label: string;
+  max_capacity: number;
+  current_count: number;
+}
 
 const WaitlistTiersSection = () => {
   const navigate = useNavigate();
@@ -74,8 +85,22 @@ const WaitlistTiersSection = () => {
   const [isOnWaitlist, setIsOnWaitlist] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authReady, setAuthReady] = useState(false);
+  const [tierCounts, setTierCounts] = useState<Record<string, TierCount>>({});
+
+  const fetchTierCounts = async () => {
+    const { data } = await supabase.rpc('get_tier_counts');
+    if (data && Array.isArray(data)) {
+      const map: Record<string, TierCount> = {};
+      data.forEach((row: any) => {
+        map[row.tier_id] = row;
+      });
+      setTierCounts(map);
+    }
+  };
 
   useEffect(() => {
+    fetchTierCounts();
+
     const checkStatus = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -122,7 +147,6 @@ const WaitlistTiersSection = () => {
     e.preventDefault();
 
     if (tier.isFree) {
-      // Scroll to signup section
       const el = document.getElementById('waitlist-signup');
       if (el) el.scrollIntoView({ behavior: 'smooth' });
       return;
@@ -137,12 +161,26 @@ const WaitlistTiersSection = () => {
     // Check if user is on the waitlist
     const { data } = await supabase.rpc('get_my_waitlist_status');
     if (data && Array.isArray(data) && data.length > 0) {
+      // User is on waitlist — open payment link for upgrade
       window.open(tier.href, '_blank', 'noopener,noreferrer');
     } else {
       setForm((f) => ({ ...f, email: session.user.email || '', fullName: session.user.user_metadata?.full_name || '' }));
       setPendingHref(tier.href);
       setShowWaitlistForm(true);
     }
+  };
+
+  const handleUpgrade = async (e: React.MouseEvent, tier: typeof tiers[0]) => {
+    e.preventDefault();
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate('/login?redirect=waitlist-tiers');
+      return;
+    }
+
+    // Open payment link — after payment, user updates tier via dashboard or webhook
+    window.open(tier.href, '_blank', 'noopener,noreferrer');
   };
 
   const validate = () => {
@@ -190,6 +228,25 @@ const WaitlistTiersSection = () => {
     return tierCardRank <= currentRank;
   };
 
+  const isUpgradeable = (tierId: string) => {
+    if (!authReady || !isLoggedIn || !isOnWaitlist) return false;
+    const currentRank = tierRank[userTier ?? 'free'] ?? 0;
+    const tierCardRank = tierRank[tierId] ?? 0;
+    return tierCardRank > currentRank;
+  };
+
+  const getTierCapacityDisplay = (tierId: string) => {
+    const tc = tierCounts[tierId];
+    if (!tc || tierId === 'free') return null;
+    const isOversubscribed = tc.current_count > tc.max_capacity;
+    return {
+      current: tc.current_count,
+      max: tc.max_capacity,
+      isOversubscribed,
+      label: `${tc.current_count}/${tc.max_capacity}`,
+    };
+  };
+
   return (
     <>
       <section id="waitlist-tiers" className="py-16 md:py-24 bg-soft-white">
@@ -203,11 +260,11 @@ const WaitlistTiersSection = () => {
             </p>
           </div>
 
-          {
-
           <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {tiers.map((card, i) => {
               const joined = isTierJoined(card.id);
+              const upgradeable = isUpgradeable(card.id);
+              const capacity = getTierCapacityDisplay(card.id);
 
               return (
                 <div
@@ -235,6 +292,36 @@ const WaitlistTiersSection = () => {
                   </p>
                   <p className="font-body text-sm text-muted mt-2">{card.description}</p>
 
+                  {/* Tier capacity indicator */}
+                  {capacity && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <Users className="w-3.5 h-3.5 text-muted" />
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-body text-xs text-muted">
+                            {capacity.isOversubscribed ? (
+                              <span className="text-accent font-semibold">🔥 {capacity.label} — Oversubscribed!</span>
+                            ) : (
+                              <span>{capacity.label} spots filled</span>
+                            )}
+                          </span>
+                        </div>
+                        <div className="w-full bg-border rounded-full h-1.5">
+                          <div
+                            className={`h-1.5 rounded-full transition-all ${
+                              capacity.isOversubscribed
+                                ? 'bg-accent'
+                                : capacity.current / capacity.max > 0.8
+                                  ? 'bg-accent'
+                                  : 'bg-primary'
+                            }`}
+                            style={{ width: `${Math.min((capacity.current / capacity.max) * 100, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <ul className="mt-4 space-y-2 flex-1">
                     {card.features.map((f) => (
                       <li key={f} className="flex items-start gap-2 font-body text-sm text-foreground">
@@ -249,6 +336,18 @@ const WaitlistTiersSection = () => {
                       <CheckCircle className="w-4 h-4" />
                       You've joined this tier
                     </div>
+                  ) : upgradeable ? (
+                    <button
+                      onClick={(e) => handleUpgrade(e, card)}
+                      className={`mt-6 w-full font-body font-medium py-3 rounded-lg transition-opacity hover:opacity-90 text-center flex items-center justify-center gap-2 ${
+                        card.recommended
+                          ? 'bg-accent text-accent-foreground'
+                          : 'bg-primary text-primary-foreground'
+                      }`}
+                    >
+                      <ArrowUpCircle className="w-4 h-4" />
+                      {card.upgradeCta}
+                    </button>
                   ) : (
                     <button
                       onClick={(e) => handleTierClick(e as any, card)}
@@ -267,7 +366,6 @@ const WaitlistTiersSection = () => {
               );
             })}
           </div>
-          }
         </div>
       </section>
 
