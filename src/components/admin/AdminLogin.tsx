@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Shield, Check, Lock, Mail } from 'lucide-react';
+import PasswordInput from '@/components/PasswordInput';
 
 interface AdminLoginProps {
   onSuccess: (userId: string) => void;
@@ -9,6 +10,7 @@ interface AdminLoginProps {
 
 const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ id: string; email: string } | null>(null);
@@ -21,11 +23,9 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
   const [inviteEmail, setInviteEmail] = useState<string | null>(null);
   const [inviteLoading, setInviteLoading] = useState(!!inviteToken);
 
-  // OTP state
-  const [otpMode, setOtpMode] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [resending, setResending] = useState(false);
-  const [resendSuccess, setResendSuccess] = useState('');
+  // Sign-up mode (for new users accepting invites)
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   // Fetch invite email from token on mount
   useEffect(() => {
@@ -89,73 +89,76 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
     }
   };
 
-  // Send admin OTP (always uses signInWithOtp - works for both new and existing users)
-  const sendAdminOtp = async (targetEmail: string) => {
-    setLoading(true);
-    setError('');
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      email: targetEmail,
-      options: { shouldCreateUser: true },
-    });
-    if (otpError) {
-      setError(otpError.message);
-      setLoading(false);
-      return false;
-    }
-    setOtpMode(true);
-    toast.success('Admin verification code sent to your email.');
-    setLoading(false);
-    return true;
-  };
-
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!email.trim()) return;
-    // If invite token, email must match
+    if (!email.trim() || !password.trim()) return;
+
     if (inviteEmail && email.toLowerCase() !== inviteEmail.toLowerCase()) {
       setError('This invite is for a different email address.');
       return;
     }
-    await sendAdminOtp(email);
-  };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    if (otp.length < 6) { setError('Enter the 6-digit code'); return; }
     setLoading(true);
 
-    const { data, error: err } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: 'email',
-    });
+    if (isSignUp) {
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        setLoading(false);
+        return;
+      }
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters.');
+        setLoading(false);
+        return;
+      }
 
-    if (err) {
-      setError(err.message);
-    } else if (data.user) {
-      setLoggedInUser({ id: data.user.id, email: data.user.email || '' });
-      if (inviteToken) {
-        await handleAcceptByToken(inviteToken, data.user.id);
-      } else {
-        onSuccess(data.user.id);
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (signUpError) {
+        setError(signUpError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        // If email confirmation is required, the session may not exist yet
+        if (data.session) {
+          setLoggedInUser({ id: data.user.id, email: data.user.email || '' });
+          if (inviteToken) {
+            await handleAcceptByToken(inviteToken, data.user.id);
+          } else {
+            onSuccess(data.user.id);
+          }
+        } else {
+          toast.info('Please check your email to confirm your account, then sign in.');
+          setIsSignUp(false);
+          setPassword('');
+          setConfirmPassword('');
+        }
+      }
+    } else {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        setError(signInError.message);
+      } else if (data.user) {
+        setLoggedInUser({ id: data.user.id, email: data.user.email || '' });
+        if (inviteToken) {
+          await handleAcceptByToken(inviteToken, data.user.id);
+        } else {
+          onSuccess(data.user.id);
+        }
       }
     }
-    setLoading(false);
-  };
 
-  const handleResendOtp = async () => {
-    setResending(true);
-    setError('');
-    setResendSuccess('');
-    const { error: err } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: true },
-    });
-    if (err) setError(err.message);
-    else setResendSuccess('New admin verification code sent! Check your email.');
-    setResending(false);
+    setLoading(false);
   };
 
   const isEmailLocked = !!inviteEmail;
@@ -212,102 +215,28 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
     );
   }
 
-  // OTP verification screen
-  if (otpMode) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
-            <h1 className="font-heading font-bold text-2xl text-foreground">
-              Admin Identity Verification
-            </h1>
-            <p className="font-body text-sm text-muted mt-1">
-              We sent an <strong>admin verification code</strong> to <span className="font-medium text-foreground">{email}</span>
-            </p>
-            <p className="font-body text-xs text-muted mt-2 bg-muted/10 rounded-lg px-3 py-2 inline-block">
-              <Mail className="w-3 h-3 inline mr-1" />
-              This is separate from any waitlist verification codes
-            </p>
-          </div>
-
-          <form onSubmit={handleVerifyOtp} className="bg-surface rounded-2xl shadow-lg border border-border p-8 space-y-4">
-            {error && (
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3">
-                <p className="text-destructive text-sm font-body">{error}</p>
-              </div>
-            )}
-            {resendSuccess && (
-              <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-3">
-                <p className="text-primary text-sm font-body">{resendSuccess}</p>
-              </div>
-            )}
-
-            <div>
-              <label className="font-body text-sm font-medium text-foreground mb-1.5 block">
-                Admin verification code
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="000000"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                required
-                className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow text-center tracking-[0.5em] text-lg"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary text-primary-foreground font-body font-semibold py-3 rounded-lg disabled:opacity-50 hover:opacity-90 transition-opacity"
-            >
-              {loading ? 'Verifying...' : (inviteToken ? 'Verify & Accept Invite' : 'Verify & Sign In')}
-            </button>
-
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={handleResendOtp}
-                disabled={resending}
-                className="font-body text-sm text-primary hover:underline disabled:opacity-50"
-              >
-                {resending ? 'Sending...' : "Didn't receive a code? Resend"}
-              </button>
-            </div>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => { setOtpMode(false); setOtp(''); setError(''); setResendSuccess(''); }}
-              className="font-body text-sm text-muted hover:text-foreground transition-colors"
-            >
-              ← Back
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Email entry screen (OTP-based, no password)
+  // Email + password login/signup screen
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <form
-        onSubmit={handleSendOtp}
+        onSubmit={handleLogin}
         className="bg-surface rounded-2xl shadow-lg border border-border p-8 w-full max-w-sm space-y-4"
       >
         <div className="text-center">
           <Shield className="w-10 h-10 text-primary mx-auto mb-3" />
           <h1 className="font-heading font-bold text-xl text-foreground">
-            {inviteToken ? 'Accept Admin Invite' : 'Admin Login'}
+            {inviteToken
+              ? 'Accept Admin Invite'
+              : isSignUp
+              ? 'Admin Sign Up'
+              : 'Admin Login'}
           </h1>
           <p className="font-body text-sm text-muted mt-1">
             {inviteToken
-              ? 'Verify your email to accept the admin invite'
-              : "We'll send a verification code to your email"}
+              ? 'Sign in or create an account to accept the invite'
+              : isSignUp
+              ? 'Create your admin account'
+              : 'Sign in with your email and password'}
           </p>
         </div>
 
@@ -323,31 +252,63 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
         )}
         {error && <p className="text-destructive text-sm font-body text-center">{error}</p>}
 
-        <div className="relative">
-          <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => !isEmailLocked && setEmail(e.target.value)}
-            readOnly={isEmailLocked}
-            required
-            className={`w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground ${
-              isEmailLocked ? 'bg-muted/10 cursor-not-allowed pr-10' : ''
-            }`}
-          />
-          {isEmailLocked && (
-            <Lock className="w-4 h-4 text-muted absolute right-3 top-1/2 -translate-y-1/2" />
-          )}
+        <div>
+          <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Email</label>
+          <div className="relative">
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => !isEmailLocked && setEmail(e.target.value)}
+              readOnly={isEmailLocked}
+              required
+              className={`w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow ${
+                isEmailLocked ? 'bg-muted/10 cursor-not-allowed pr-10' : ''
+              }`}
+            />
+            {isEmailLocked && (
+              <Lock className="w-4 h-4 text-muted absolute right-3 top-1/2 -translate-y-1/2" />
+            )}
+          </div>
         </div>
+
+        <PasswordInput
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          required
+        />
+
+        {isSignUp && (
+          <PasswordInput
+            label="Confirm Password"
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            required
+          />
+        )}
 
         <button
           type="submit"
           disabled={loading || (!!inviteToken && !inviteEmail)}
           className="w-full bg-primary text-primary-foreground font-body font-semibold py-3 rounded-lg disabled:opacity-50 hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-2"
         >
-          <Mail className="w-4 h-4" />
-          {loading ? 'Sending code...' : 'Send Verification Code'}
+          {loading
+            ? (isSignUp ? 'Creating account...' : 'Signing in...')
+            : inviteToken
+            ? (isSignUp ? 'Sign Up & Accept Invite' : 'Sign In & Accept Invite')
+            : (isSignUp ? 'Create Account' : 'Sign In')}
         </button>
+
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => { setIsSignUp(!isSignUp); setError(''); setConfirmPassword(''); }}
+            className="font-body text-sm text-primary hover:underline"
+          >
+            {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+          </button>
+        </div>
       </form>
     </div>
   );
