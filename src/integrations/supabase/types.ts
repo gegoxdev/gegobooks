@@ -62,6 +62,30 @@ export type Database = {
         }
         Relationships: []
       }
+      tier_limits: {
+        Row: {
+          created_at: string
+          id: string
+          max_capacity: number
+          tier_id: string
+          tier_label: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_capacity?: number
+          tier_id: string
+          tier_label: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_capacity?: number
+          tier_id?: string
+          tier_label?: string
+        }
+        Relationships: []
+      }
       waitlist_signups: {
         Row: {
           created_at: string
@@ -151,6 +175,15 @@ export type Database = {
         }
         Relationships: []
       }
+      tier_counts: {
+        Row: {
+          current_count: number | null
+          max_capacity: number | null
+          tier_id: string | null
+          tier_label: string | null
+        }
+        Relationships: []
+      }
       todays_signups: {
         Row: {
           count: number | null
@@ -219,6 +252,7 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       request_account_deletion: { Args: never; Returns: undefined }
+      upgrade_tier: { Args: { new_tier: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
