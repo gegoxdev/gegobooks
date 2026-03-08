@@ -14,7 +14,7 @@ import UserAccountStats from '@/components/admin/UserAccountStats';
 import AdminManagement from '@/components/admin/AdminManagement';
 import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 
-type AdminRole = 'readonly' | 'admin' | 'master';
+type AdminRole = 'readonly' | 'approver' | 'admin' | 'master';
 
 const Admin = () => {
   useInactivityTimeout();
@@ -69,7 +69,7 @@ const Admin = () => {
     <div className="min-h-screen bg-background">
       <AdminHeader onSignOut={handleSignOut} />
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {isMaster && <AdminManagement />}
+        {(isMaster || adminRole === 'approver') && <AdminManagement currentRole={adminRole} />}
         <AfricaMap />
         <UserAccountStats isReadOnly={isReadOnly} />
         <MetricsBar />
