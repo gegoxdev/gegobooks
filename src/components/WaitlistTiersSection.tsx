@@ -74,7 +74,7 @@ interface TierCount {
   current_count: number;
 }
 
-const WaitlistTiersSection = () => {
+const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => {
   const navigate = useNavigate();
   const [showWaitlistForm, setShowWaitlistForm] = useState(false);
   const [pendingHref, setPendingHref] = useState('');
@@ -147,8 +147,7 @@ const WaitlistTiersSection = () => {
     e.preventDefault();
 
     if (tier.isFree) {
-      const el = document.getElementById('waitlist-signup');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      onOpenModal?.();
       return;
     }
 

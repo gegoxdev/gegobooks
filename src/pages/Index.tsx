@@ -37,7 +37,7 @@ const Index = () => {
       <SolutionSection />
       <FeaturesSection />
       <WhyNowSection />
-      <WaitlistTiersSection />
+      <WaitlistTiersSection onOpenModal={() => setModalOpen(true)} />
       <MissionSection />
       <FAQSection />
       <FinalCTASection onOpenModal={() => setModalOpen(true)} />
