@@ -54,6 +54,25 @@ const Dashboard = () => {
       setLoading(false);
     };
     fetchData();
+
+    // Subscribe to realtime profile changes (e.g. admin tier updates)
+    const channel = supabase
+      .channel('profile-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setProfile((prev: any) => ({ ...prev, ...payload.new }));
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const handleSignOut = async () => {
