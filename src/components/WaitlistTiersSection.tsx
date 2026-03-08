@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -36,13 +35,17 @@ const cards = [
 
 const WaitlistTiersSection = () => {
   const navigate = useNavigate();
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  
 
-  const handlePayClick = async (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handlePayClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      e.preventDefault();
-      setShowAuthPrompt(true);
+      navigate('/login?redirect=waitlist-tiers');
+    } else {
+      // User is authenticated, open payment link
+      const href = e.currentTarget.href;
+      window.open(href, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -58,23 +61,6 @@ const WaitlistTiersSection = () => {
           </p>
         </div>
 
-        {showAuthPrompt && (
-          <div className="mb-8 max-w-md mx-auto bg-accent/10 border border-accent/30 rounded-xl p-4 text-center">
-            <p className="font-body text-sm text-foreground mb-2">Sign in to manage your access tier</p>
-            <p className="font-body text-xs text-muted mb-3">Create an account or sign in to access paid tiers and see your ranking.</p>
-            <div className="flex justify-center gap-2">
-              <button
-                onClick={() => navigate('/login')}
-                className="font-body text-xs font-semibold bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
-              >
-                Sign In / Sign Up
-              </button>
-              <button onClick={() => setShowAuthPrompt(false)} className="font-body text-xs text-muted hover:underline px-2">
-                Dismiss
-              </button>
-            </div>
-          </div>
-        )}
 
         <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
           {cards.map((card, i) => (
@@ -110,7 +96,7 @@ const WaitlistTiersSection = () => {
                 href={card.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={(e) => handlePayClick(e, card.href)}
+                onClick={(e) => handlePayClick(e)}
                 className={`mt-6 w-full font-body font-medium py-3 rounded-lg transition-opacity hover:opacity-90 text-center block ${
                   card.recommended
                     ? 'bg-accent text-accent-foreground'

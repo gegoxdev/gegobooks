@@ -15,10 +15,9 @@ const Navbar = ({ onJoinWaitlist }: NavbarProps) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToTiers = () => {
+  const handleJoinWaitlist = () => {
     setMenuOpen(false);
-    const el = document.getElementById('waitlist-tiers');
-    el?.scrollIntoView({ behavior: 'smooth' });
+    onJoinWaitlist();
   };
 
   return (
@@ -38,7 +37,7 @@ const Navbar = ({ onJoinWaitlist }: NavbarProps) => {
 
         {/* Desktop */}
         <button
-          onClick={scrollToTiers}
+          onClick={handleJoinWaitlist}
           className="hidden md:inline-flex bg-primary text-primary-foreground font-body font-medium px-5 py-2 rounded-lg hover:opacity-90 transition-opacity"
         >
           Join Waitlist
@@ -64,7 +63,7 @@ const Navbar = ({ onJoinWaitlist }: NavbarProps) => {
       {menuOpen && (
         <div className="md:hidden bg-surface shadow-lg px-4 py-4">
           <button
-            onClick={scrollToTiers}
+            onClick={handleJoinWaitlist}
             className="w-full bg-primary text-primary-foreground font-body font-medium px-5 py-3 rounded-lg"
           >
             Join Waitlist

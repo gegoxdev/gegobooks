@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/HeroSection';
 import ProblemSection from '@/components/ProblemSection';
@@ -18,6 +18,14 @@ const Index = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const pageRef = useFadeUp();
   const utmParams = useUtmParams();
+
+  useEffect(() => {
+    if (window.location.hash === '#waitlist-tiers') {
+      setTimeout(() => {
+        document.getElementById('waitlist-tiers')?.scrollIntoView({ behavior: 'smooth' });
+      }, 500);
+    }
+  }, []);
 
   return (
     <div ref={pageRef} className="min-h-screen">
