@@ -47,7 +47,7 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('readonly');
   const [sending, setSending] = useState(false);
-  const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Direct add form (master only)
   const [directEmail, setDirectEmail] = useState('');
