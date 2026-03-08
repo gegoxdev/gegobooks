@@ -229,6 +229,27 @@ export type Database = {
       }
     }
     Views: {
+      arpu: {
+        Row: {
+          arpu_ngn: number | null
+        }
+        Relationships: []
+      }
+      avg_referrals_per_user: {
+        Row: {
+          avg_referrals: number | null
+          total_referrals: number | null
+          users_with_referrals: number | null
+        }
+        Relationships: []
+      }
+      churn_rate: {
+        Row: {
+          churn_pct: number | null
+          deletion_requests: number | null
+        }
+        Relationships: []
+      }
       country_distribution: {
         Row: {
           country: string | null
@@ -242,6 +263,14 @@ export type Database = {
           mom: number | null
           wow: number | null
           yoy: number | null
+        }
+        Relationships: []
+      }
+      paid_conversion_rate: {
+        Row: {
+          conversion_pct: number | null
+          paid_users: number | null
+          total_signups: number | null
         }
         Relationships: []
       }
@@ -271,12 +300,36 @@ export type Database = {
         }
         Relationships: []
       }
+      signup_source_breakdown: {
+        Row: {
+          percentage: number | null
+          signups: number | null
+          source: string | null
+        }
+        Relationships: []
+      }
+      signups_by_day_of_week: {
+        Row: {
+          day_name: string | null
+          day_num: number | null
+          signups: number | null
+        }
+        Relationships: []
+      }
       tier_counts: {
         Row: {
           current_count: number | null
           max_capacity: number | null
           tier_id: string | null
           tier_label: string | null
+        }
+        Relationships: []
+      }
+      tier_upgrade_funnel: {
+        Row: {
+          percentage: number | null
+          tier: string | null
+          users: number | null
         }
         Relationships: []
       }
