@@ -41,8 +41,11 @@ const UserAccountStats = ({ isReadOnly = false }: { isReadOnly?: boolean }) => {
 
   const fetchProfiles = async () => {
     setProfilesLoading(true);
+    // Get admin user_ids to exclude
+    const { data: adminData } = await supabase.rpc('admin_list_admins' as any);
+    const adminUserIds = new Set((adminData as any[] || []).map((a: any) => a.user_id));
     const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-    if (data) setProfiles(data as Profile[]);
+    if (data) setProfiles((data as Profile[]).filter(p => !adminUserIds.has(p.user_id)));
     setProfilesLoading(false);
   };
 
