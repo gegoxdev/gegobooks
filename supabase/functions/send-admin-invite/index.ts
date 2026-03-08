@@ -16,26 +16,27 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // Read body first before consuming request
+    const { email, role, siteUrl } = await req.json();
 
-    const supabaseUser = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    if (!email || !role || !siteUrl) {
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: corsHeaders });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
 
     // Verify caller is authenticated
-    const { data: { user } } = await supabaseUser.auth.getUser();
-    if (!user) {
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
     }
 
-    const { email, role, siteUrl } = await req.json();
-
-    // Create invite via RPC (handles authorization checks)
+    // Create invite via RPC (handles authorization checks server-side)
     const { data: token, error: inviteError } = await supabaseUser.rpc('create_admin_invite', {
       target_email: email,
       invite_role: role,
@@ -45,32 +46,15 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: inviteError.message }), { status: 400, headers: corsHeaders });
     }
 
-    // Try to send email via Supabase's built-in email
-    // Generate invite link
     const inviteLink = `${siteUrl}/admin?invite=${token}`;
 
-    // Send email using admin API - create a magic link style notification
-    // We'll use the admin API to send a custom email
-    const { error: emailError } = await supabaseAdmin.auth.admin.generateLink({
-      type: 'magiclink',
-      email: email,
-      options: {
-        redirectTo: inviteLink,
-      }
-    });
-
-    // Even if email fails, the invite is created (in-app will work)
-    const emailSent = !emailError;
-
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        token, 
+      JSON.stringify({
+        success: true,
+        token,
         inviteLink,
-        emailSent,
-        message: emailSent 
-          ? `Invite sent to ${email}` 
-          : `Invite created. Share this link: ${inviteLink}`
+        emailSent: false,
+        message: `Invite created! Share this link with the recipient.`,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
