@@ -32,17 +32,22 @@ const InvestorMetrics = () => {
         supabase.from('signups_by_day_of_week' as any).select('*'),
       ]);
 
+      const arpuData = arpuRes.data as any;
+      const convData = convRes.data as any;
+      const refData = refRes.data as any;
+      const churnData = churnRes.data as any;
+
       setData({
-        arpu: Number(arpuRes.data?.arpu_ngn) || 0,
+        arpu: Number(arpuData?.arpu_ngn) || 0,
         paidConversion: {
-          conversion_pct: Number(convRes.data?.conversion_pct) || 0,
-          paid_users: Number(convRes.data?.paid_users) || 0,
-          total_signups: Number(convRes.data?.total_signups) || 0,
+          conversion_pct: Number(convData?.conversion_pct) || 0,
+          paid_users: Number(convData?.paid_users) || 0,
+          total_signups: Number(convData?.total_signups) || 0,
         },
         avgReferrals: {
-          avg_referrals: Number(refRes.data?.avg_referrals) || 0,
-          total_referrals: Number(refRes.data?.total_referrals) || 0,
-          users_with_referrals: Number(refRes.data?.users_with_referrals) || 0,
+          avg_referrals: Number(refData?.avg_referrals) || 0,
+          total_referrals: Number(refData?.total_referrals) || 0,
+          users_with_referrals: Number(refData?.users_with_referrals) || 0,
         },
         sources: ((srcRes.data as any[]) || []).map((r: any) => ({
           source: r.source,
@@ -50,8 +55,8 @@ const InvestorMetrics = () => {
           percentage: Number(r.percentage),
         })),
         churn: {
-          churn_pct: Number(churnRes.data?.churn_pct) || 0,
-          deletion_requests: Number(churnRes.data?.deletion_requests) || 0,
+          churn_pct: Number(churnData?.churn_pct) || 0,
+          deletion_requests: Number(churnData?.deletion_requests) || 0,
         },
         tierFunnel: ((funnelRes.data as any[]) || []).map((r: any) => ({
           tier: r.tier,
