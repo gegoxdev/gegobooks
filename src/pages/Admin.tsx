@@ -12,6 +12,8 @@ import WaitlistProjection from '@/components/admin/WaitlistProjection';
 import SignupsTable from '@/components/admin/SignupsTable';
 import UserAccountStats from '@/components/admin/UserAccountStats';
 import AdminManagement from '@/components/admin/AdminManagement';
+import ViewerLinkManager from '@/components/admin/ViewerLinkManager';
+import ViewerDashboard from '@/components/admin/ViewerDashboard';
 import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 
 type AdminRole = 'readonly' | 'approver' | 'admin' | 'master';
@@ -21,6 +23,15 @@ const Admin = () => {
   const [authed, setAuthed] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [adminRole, setAdminRole] = useState<AdminRole>('readonly');
+
+  // Check for viewer token in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const viewerToken = urlParams.get('viewer');
+
+  // If viewer token present, render viewer dashboard (no auth needed)
+  if (viewerToken) {
+    return <ViewerDashboard token={viewerToken} />;
+  }
 
   const isReadOnly = adminRole === 'readonly';
   const isMaster = adminRole === 'master';
@@ -70,6 +81,7 @@ const Admin = () => {
       <AdminHeader onSignOut={handleSignOut} />
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {(isMaster || adminRole === 'approver') && <AdminManagement currentRole={adminRole} />}
+        {isMaster && <ViewerLinkManager />}
         <AfricaMap />
         <UserAccountStats isReadOnly={isReadOnly} />
         <MetricsBar />
