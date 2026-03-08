@@ -89,6 +89,7 @@ const Admin = () => {
         <AfricaMap />
         <UserAccountStats isReadOnly={isReadOnly} />
         <MetricsBar />
+        <InvestorMetrics />
         <GrowthComparisons />
         <SignupGrowthChart />
         <div className="grid md:grid-cols-2 gap-6">
