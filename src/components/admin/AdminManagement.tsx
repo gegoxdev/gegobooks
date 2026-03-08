@@ -69,8 +69,17 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
   };
 
   const fetchInvites = async () => {
-    const { data } = await supabase.rpc('list_admin_invites' as any);
-    if (data) setInvites(data as AdminInvite[]);
+    setInvitesLoading(true);
+    const { data, error } = await supabase.rpc('list_admin_invites' as any);
+
+    if (error) {
+      console.error('Failed to fetch invites:', error);
+      toast.error('Could not load invites right now. Please retry.');
+      setInvitesLoading(false);
+      return;
+    }
+
+    setInvites((data as AdminInvite[]) || []);
     setInvitesLoading(false);
   };
 
@@ -78,6 +87,12 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
     fetchAdmins();
     if (canInvite) fetchInvites();
   }, []);
+
+  useEffect(() => {
+    if (canInvite && activeTab === 'invites') {
+      fetchInvites();
+    }
+  }, [activeTab, canInvite]);
 
   const handleSendInvite = async (e: React.FormEvent) => {
     e.preventDefault();
