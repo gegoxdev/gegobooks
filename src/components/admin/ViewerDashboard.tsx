@@ -107,8 +107,12 @@ const ViewerDashboard = ({ token }: ViewerDashboardProps) => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <MetricCard label="Total Waitlist" value={data.total.toLocaleString()} />
           <MetricCard label="Today's Signups" value={data.today.toLocaleString()} />
-          <MetricCard label="Revenue (₦)" value={Number(data.revenue).toLocaleString()} />
+          <MetricCard label="Revenue (₦)" value={`₦${Number(data.revenue).toLocaleString()}`} />
           <MetricCard label="Referral Rate" value={`${data.referralConversion}%`} />
+          <MetricCard label="ARPU (₦)" value={`₦${data.arpu?.toLocaleString() || '0'}`} />
+          <MetricCard label="Paid Conversion" value={`${data.paidConversion?.conversion_pct || 0}%`} />
+          <MetricCard label="Avg Referrals" value={`${data.avgReferrals?.avg_referrals || 0}`} />
+          <MetricCard label="Churn Rate" value={`${data.churn?.churn_pct || 0}%`} />
         </div>
 
         {/* User Account Stats */}
