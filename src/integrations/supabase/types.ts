@@ -32,6 +32,33 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          tier: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          tier?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          tier?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       waitlist_signups: {
         Row: {
           created_at: string
@@ -109,9 +136,7 @@ export type Database = {
       }
       referral_leaderboard: {
         Row: {
-          email: string | null
           full_name: string | null
-          referral_code: string | null
           referrals_count: number | null
         }
         Relationships: []
@@ -157,6 +182,17 @@ export type Database = {
         Returns: {
           referral_code: string
           referrals_count: number
+          waitlist_position: number
+        }[]
+      }
+      get_my_waitlist_status: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          referral_code: string
+          referrals_count: number
+          user_type: string
           waitlist_position: number
         }[]
       }

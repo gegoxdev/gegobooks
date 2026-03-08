@@ -3,9 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface Referrer {
   full_name: string;
-  email: string;
   referrals_count: number;
-  referral_code: string;
 }
 
 const ReferralLeaderboard = () => {
@@ -14,7 +12,7 @@ const ReferralLeaderboard = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const { data: d } = await supabase.from('referral_leaderboard').select('*');
+      const { data: d } = await supabase.from('referral_leaderboard').select('full_name, referrals_count');
       if (d) setData(d as any);
       setLoading(false);
     };
@@ -33,11 +31,10 @@ const ReferralLeaderboard = () => {
       ) : (
         <div className="space-y-2">
           {data.map((r, i) => (
-            <div key={r.referral_code} className="flex items-center gap-3 font-body text-sm">
+            <div key={i} className="flex items-center gap-3 font-body text-sm">
               <span className="font-heading font-bold text-primary w-6">#{i + 1}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-foreground truncate">{r.full_name}</p>
-                <p className="text-muted text-xs truncate">{r.email}</p>
               </div>
               <span className="font-bold text-primary whitespace-nowrap">{r.referrals_count}</span>
             </div>
