@@ -268,7 +268,7 @@ const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => 
               return (
                 <div
                   key={card.title}
-                  className={`fade-up stagger-${i + 1} rounded-xl border p-6 flex flex-col ${
+                  className={`fade-up stagger-${i + 1} rounded-xl border p-4 sm:p-6 flex flex-col ${
                     joined
                       ? 'bg-muted/5 border-border opacity-80'
                       : card.recommended
