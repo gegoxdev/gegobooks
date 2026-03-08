@@ -267,7 +267,7 @@ const WaitlistTiersSection = () => {
               );
             })}
           </div>
-          )}
+          }
         </div>
       </section>
 
