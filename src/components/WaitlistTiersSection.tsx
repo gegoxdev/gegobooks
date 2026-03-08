@@ -147,8 +147,7 @@ const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => 
     e.preventDefault();
 
     if (tier.isFree) {
-      const el = document.getElementById('waitlist-signup');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      onOpenModal?.();
       return;
     }
 
