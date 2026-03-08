@@ -20,6 +20,7 @@ const tierColors: Record<string, string> = {
 };
 
 const Dashboard = () => {
+  useInactivityTimeout();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);

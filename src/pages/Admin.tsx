@@ -14,6 +14,7 @@ import UserAccountStats from '@/components/admin/UserAccountStats';
 import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 
 const Admin = () => {
+  useInactivityTimeout();
   const [authed, setAuthed] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
 
