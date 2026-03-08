@@ -92,7 +92,7 @@ const TierDropdown = ({ signup, onUpdate, disabled }: { signup: Signup; onUpdate
   );
 };
 
-const SignupsTable = () => {
+const SignupsTable = ({ isReadOnly = false }: { isReadOnly?: boolean }) => {
   const [signups, setSignups] = useState<Signup[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
