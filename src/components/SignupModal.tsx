@@ -72,8 +72,11 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
         });
 
       if (error) {
+        console.error('Waitlist signup error:', error.code, error.message);
         if (error.code === '23505') {
           setErrors({ email: 'This email is already on the waitlist!' });
+        } else if (error.code === '42501') {
+          setErrors({ email: 'Permission denied. Please try again or contact support.' });
         } else {
           setErrors({ email: 'Something went wrong. Please try again.' });
         }
