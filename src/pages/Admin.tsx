@@ -10,6 +10,7 @@ import UserTypeBreakdown from '@/components/admin/UserTypeBreakdown';
 import ReferralLeaderboard from '@/components/admin/ReferralLeaderboard';
 import WaitlistProjection from '@/components/admin/WaitlistProjection';
 import SignupsTable from '@/components/admin/SignupsTable';
+import UserAccountStats from '@/components/admin/UserAccountStats';
 
 const Admin = () => {
   const [authed, setAuthed] = useState(false);
