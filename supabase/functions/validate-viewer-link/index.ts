@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 Deno.serve(async (req) => {
@@ -60,6 +60,12 @@ Deno.serve(async (req) => {
       referralConvRes,
       countryRes,
       userStatsRes,
+      arpuRes,
+      convRateRes,
+      avgRefRes,
+      churnRes,
+      funnelRes,
+      sourcesRes,
     ] = await Promise.all([
       supabaseAdmin.from('total_waitlist_users').select('*').single(),
       supabaseAdmin.from('todays_signups').select('*').single(),
@@ -72,6 +78,12 @@ Deno.serve(async (req) => {
       supabaseAdmin.from('referral_conversion').select('*').single(),
       supabaseAdmin.from('country_distribution').select('*'),
       supabaseAdmin.rpc('get_admin_user_stats'),
+      supabaseAdmin.from('arpu').select('*').single(),
+      supabaseAdmin.from('paid_conversion_rate').select('*').single(),
+      supabaseAdmin.from('avg_referrals_per_user').select('*').single(),
+      supabaseAdmin.from('churn_rate').select('*').single(),
+      supabaseAdmin.from('tier_upgrade_funnel').select('*'),
+      supabaseAdmin.from('signup_source_breakdown').select('*'),
     ]);
 
     // Fetch signup growth (daily)
@@ -94,6 +106,31 @@ Deno.serve(async (req) => {
           countries: countryRes.data || [],
           signupGrowth: signupGrowth || [],
           userStats: userStatsRes.data || {},
+          arpu: Number(arpuRes.data?.arpu_ngn) || 0,
+          paidConversion: {
+            conversion_pct: Number(convRateRes.data?.conversion_pct) || 0,
+            paid_users: Number(convRateRes.data?.paid_users) || 0,
+            total_signups: Number(convRateRes.data?.total_signups) || 0,
+          },
+          avgReferrals: {
+            avg_referrals: Number(avgRefRes.data?.avg_referrals) || 0,
+            total_referrals: Number(avgRefRes.data?.total_referrals) || 0,
+            users_with_referrals: Number(avgRefRes.data?.users_with_referrals) || 0,
+          },
+          churn: {
+            churn_pct: Number(churnRes.data?.churn_pct) || 0,
+            deletion_requests: Number(churnRes.data?.deletion_requests) || 0,
+          },
+          tierFunnel: (funnelRes.data || []).map((r: any) => ({
+            tier: r.tier,
+            users: Number(r.users),
+            percentage: Number(r.percentage),
+          })),
+          sources: (sourcesRes.data || []).map((r: any) => ({
+            source: r.source,
+            signups: Number(r.signups),
+            percentage: Number(r.percentage),
+          })),
         },
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

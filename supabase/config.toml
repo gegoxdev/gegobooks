@@ -2,3 +2,9 @@ project_id = "wqjklzqsqxyuuqvesnug"
 
 [functions.verify-payment]
 verify_jwt = false
+
+[functions.validate-viewer-link]
+verify_jwt = false
+
+[functions.send-admin-invite]
+verify_jwt = false

@@ -15,6 +15,12 @@ interface ViewerData {
   countries: { country: string; users: number }[];
   signupGrowth: { date: string; signups: number }[];
   userStats: Record<string, number>;
+  arpu: number;
+  paidConversion: { conversion_pct: number; paid_users: number; total_signups: number };
+  avgReferrals: { avg_referrals: number; total_referrals: number; users_with_referrals: number };
+  churn: { churn_pct: number; deletion_requests: number };
+  tierFunnel: { tier: string; users: number; percentage: number }[];
+  sources: { source: string; signups: number; percentage: number }[];
 }
 
 interface ViewerDashboardProps {
@@ -101,8 +107,12 @@ const ViewerDashboard = ({ token }: ViewerDashboardProps) => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <MetricCard label="Total Waitlist" value={data.total.toLocaleString()} />
           <MetricCard label="Today's Signups" value={data.today.toLocaleString()} />
-          <MetricCard label="Revenue (₦)" value={Number(data.revenue).toLocaleString()} />
+          <MetricCard label="Revenue (₦)" value={`₦${Number(data.revenue).toLocaleString()}`} />
           <MetricCard label="Referral Rate" value={`${data.referralConversion}%`} />
+          <MetricCard label="ARPU (₦)" value={`₦${data.arpu?.toLocaleString() || '0'}`} />
+          <MetricCard label="Paid Conversion" value={`${data.paidConversion?.conversion_pct || 0}%`} />
+          <MetricCard label="Avg Referrals" value={`${data.avgReferrals?.avg_referrals || 0}`} />
+          <MetricCard label="Churn Rate" value={`${data.churn?.churn_pct || 0}%`} />
         </div>
 
         {/* User Account Stats */}
@@ -227,6 +237,44 @@ const ViewerDashboard = ({ token }: ViewerDashboardProps) => {
                 <p className="font-heading font-bold text-xl text-foreground">{Number(data.projection.avg_daily_growth).toFixed(1)}</p>
                 <p className="font-body text-xs text-muted">Avg Daily Growth</p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Acquisition Sources */}
+        {data.sources && data.sources.length > 0 && (
+          <div className="bg-surface rounded-xl border border-border p-6">
+            <h2 className="font-heading font-bold text-lg text-foreground mb-4">Acquisition Sources</h2>
+            <div className="space-y-2">
+              {data.sources.slice(0, 8).map((s, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <span className="font-body text-sm text-foreground capitalize">{s.source}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-body text-xs text-muted">{s.percentage}%</span>
+                    <span className="font-heading font-bold text-sm text-foreground">{s.signups}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tier Funnel */}
+        {data.tierFunnel && data.tierFunnel.length > 0 && (
+          <div className="bg-surface rounded-xl border border-border p-6">
+            <h2 className="font-heading font-bold text-lg text-foreground mb-4">Tier Distribution</h2>
+            <div className="space-y-3">
+              {data.tierFunnel.map((t) => (
+                <div key={t.tier}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-body text-sm text-foreground capitalize">{t.tier}</span>
+                    <span className="font-body text-xs text-muted">{t.users} ({t.percentage}%)</span>
+                  </div>
+                  <div className="w-full bg-muted/20 rounded-full h-2">
+                    <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${Math.max(t.percentage, 2)}%` }} />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
