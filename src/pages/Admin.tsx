@@ -69,7 +69,7 @@ const Admin = () => {
     <div className="min-h-screen bg-background">
       <AdminHeader onSignOut={handleSignOut} />
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {isMaster && <AdminManagement />}
+        {(isMaster || adminRole === 'approver') && <AdminManagement currentRole={adminRole} />}
         <AfricaMap />
         <UserAccountStats isReadOnly={isReadOnly} />
         <MetricsBar />
