@@ -1,4 +1,4 @@
-const PAYSTACK_PUBLIC_KEY = 'pk_test_ed98ff4500e431b1a90e7b0e53094ff199ed5d2a';
+const PAYSTACK_PUBLIC_KEY = 'pk_live_b62d02c1d797b92aee1b25a6b6ac6d7bf7b4c146';
 
 interface PaystackConfig {
   email: string;
