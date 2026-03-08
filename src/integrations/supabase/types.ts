@@ -79,9 +79,87 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      country_distribution: {
+        Row: {
+          country: string | null
+          users: number | null
+        }
+        Relationships: []
+      }
+      growth_comparisons: {
+        Row: {
+          dod: number | null
+          mom: number | null
+          wow: number | null
+          yoy: number | null
+        }
+        Relationships: []
+      }
+      paid_tier_revenue: {
+        Row: {
+          revenue_ngn: number | null
+        }
+        Relationships: []
+      }
+      referral_conversion: {
+        Row: {
+          percentage: number | null
+        }
+        Relationships: []
+      }
+      referral_leaderboard: {
+        Row: {
+          email: string | null
+          full_name: string | null
+          referral_code: string | null
+          referrals_count: number | null
+        }
+        Relationships: []
+      }
+      signup_growth_daily: {
+        Row: {
+          date: string | null
+          signups: number | null
+        }
+        Relationships: []
+      }
+      todays_signups: {
+        Row: {
+          count: number | null
+        }
+        Relationships: []
+      }
+      total_waitlist_users: {
+        Row: {
+          total: number | null
+        }
+        Relationships: []
+      }
+      user_type_distribution: {
+        Row: {
+          count: number | null
+          user_type: string | null
+        }
+        Relationships: []
+      }
+      waitlist_projection_30d: {
+        Row: {
+          avg_daily_growth: number | null
+          current_count: number | null
+          projected_30d: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      get_waitlist_growth: {
+        Args: { timeframe: string }
+        Returns: {
+          growth_rate: number
+          period: string
+          signups: number
+        }[]
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
