@@ -73,11 +73,18 @@ const WaitlistTiersSection = () => {
   const [userTier, setUserTier] = useState<string | null>(null);
   const [isOnWaitlist, setIsOnWaitlist] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     const checkStatus = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setIsLoggedIn(false); return; }
+      if (!session) {
+        setIsLoggedIn(false);
+        setIsOnWaitlist(false);
+        setUserTier(null);
+        setAuthReady(true);
+        return;
+      }
       setIsLoggedIn(true);
 
       const [waitlistRes, profileRes] = await Promise.all([
@@ -87,15 +94,27 @@ const WaitlistTiersSection = () => {
 
       if (waitlistRes.data && Array.isArray(waitlistRes.data) && waitlistRes.data.length > 0) {
         setIsOnWaitlist(true);
+      } else {
+        setIsOnWaitlist(false);
       }
-      if (profileRes.data) {
-        setUserTier(profileRes.data.tier || 'free');
-      }
+
+      const tier = profileRes.data?.tier || 'free';
+      setUserTier(tier);
+      setAuthReady(true);
     };
 
     checkStatus();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { checkStatus(); });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        setIsLoggedIn(false);
+        setIsOnWaitlist(false);
+        setUserTier(null);
+        setAuthReady(true);
+      } else {
+        checkStatus();
+      }
+    });
     return () => subscription.unsubscribe();
   }, []);
 
@@ -165,8 +184,8 @@ const WaitlistTiersSection = () => {
   };
 
   const isTierJoined = (tierId: string) => {
-    if (!isLoggedIn || !isOnWaitlist || !userTier) return false;
-    const currentRank = tierRank[userTier] ?? 0;
+    if (!authReady || !isLoggedIn || !isOnWaitlist) return false;
+    const currentRank = tierRank[userTier ?? 'free'] ?? 0;
     const tierCardRank = tierRank[tierId] ?? 0;
     return tierCardRank <= currentRank;
   };
@@ -183,6 +202,15 @@ const WaitlistTiersSection = () => {
               Get early access and exclusive perks by joining a paid tier.
             </p>
           </div>
+
+          {!authReady ? (
+            <div className="flex justify-center py-12">
+              <svg className="animate-spin h-8 w-8 text-primary" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            </div>
+          ) : (
 
           <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {tiers.map((card, i) => {
@@ -246,6 +274,7 @@ const WaitlistTiersSection = () => {
               );
             })}
           </div>
+          )}
         </div>
       </section>
 
