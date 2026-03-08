@@ -37,7 +37,7 @@ const Navbar = ({ onJoinWaitlist }: NavbarProps) => {
 
         {/* Desktop */}
         <button
-          onClick={scrollToTiers}
+          onClick={handleJoinWaitlist}
           className="hidden md:inline-flex bg-primary text-primary-foreground font-body font-medium px-5 py-2 rounded-lg hover:opacity-90 transition-opacity"
         >
           Join Waitlist
