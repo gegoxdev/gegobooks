@@ -73,7 +73,7 @@ const Admin = () => {
           <ReferralLeaderboard />
         </div>
         <WaitlistProjection />
-        <SignupsTable />
+        <SignupsTable isReadOnly={isReadOnly} />
       </div>
     </div>
   );
