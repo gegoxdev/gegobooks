@@ -177,6 +177,7 @@ export type Database = {
       }
     }
     Functions: {
+      get_admin_user_stats: { Args: never; Returns: Json }
       get_my_signup: {
         Args: { p_email: string }
         Returns: {
