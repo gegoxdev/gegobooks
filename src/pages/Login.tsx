@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/gegobooks-logo.jpg';
+import PasswordInput from '@/components/PasswordInput';
 
 type AuthView = 'sign_in' | 'sign_up' | 'forgot_password';
 
@@ -14,6 +15,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,6 +43,7 @@ const Login = () => {
     setView(v);
     resetMessages();
     setPassword('');
+    setConfirmPassword('');
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -64,6 +67,7 @@ const Login = () => {
     if (!fullName.trim()) { setError('Full name is required'); return; }
     if (fullName.trim().length > 200) { setError('Name is too long'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (password !== confirmPassword) { setError('Passwords do not match'); return; }
 
     setLoading(true);
     const { error: err } = await supabase.auth.signUp({
@@ -78,7 +82,9 @@ const Login = () => {
     if (err) {
       setError(err.message);
     } else {
-      setSuccess('Check your email for a confirmation link, then sign in.');
+      // Redirect to OTP verification page
+      const redirectPath = redirect ? `/login?redirect=${redirect}` : '/dashboard';
+      navigate(`/verify?email=${encodeURIComponent(email.trim().toLowerCase())}&redirect=${encodeURIComponent(redirectPath)}`);
     }
     setLoading(false);
   };
@@ -202,10 +208,13 @@ const Login = () => {
             </div>
 
             {view !== 'forgot_password' && (
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="font-body text-sm font-medium text-foreground">Password</label>
-                  {view === 'sign_in' && (
+              <>
+                <PasswordInput
+                  label="Password"
+                  value={password}
+                  onChange={setPassword}
+                  required
+                  rightLabel={view === 'sign_in' ? (
                     <button
                       type="button"
                       onClick={() => switchView('forgot_password')}
@@ -213,17 +222,17 @@ const Login = () => {
                     >
                       Forgot password?
                     </button>
-                  )}
-                </div>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+                  ) : undefined}
                 />
-              </div>
+                {view === 'sign_up' && (
+                  <PasswordInput
+                    label="Confirm password"
+                    value={confirmPassword}
+                    onChange={setConfirmPassword}
+                    required
+                  />
+                )}
+              </>
             )}
 
             <button
