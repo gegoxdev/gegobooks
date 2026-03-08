@@ -31,7 +31,7 @@ const tierLabels: Record<string, string> = {
   founder: 'Founder',
 };
 
-const TierDropdown = ({ signup, onUpdate }: { signup: Signup; onUpdate: () => void }) => {
+const TierDropdown = ({ signup, onUpdate, disabled }: { signup: Signup; onUpdate: () => void; disabled?: boolean }) => {
   const [open, setOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
 
@@ -51,6 +51,14 @@ const TierDropdown = ({ signup, onUpdate }: { signup: Signup; onUpdate: () => vo
     setUpdating(false);
     setOpen(false);
   };
+
+  if (disabled) {
+    return (
+      <span className={`font-body text-xs px-2 py-0.5 rounded-full font-medium ${tierColors[signup.tier] || tierColors.free}`}>
+        {tierLabels[signup.tier] || signup.tier}
+      </span>
+    );
+  }
 
   return (
     <div className="relative">
@@ -84,7 +92,7 @@ const TierDropdown = ({ signup, onUpdate }: { signup: Signup; onUpdate: () => vo
   );
 };
 
-const SignupsTable = () => {
+const SignupsTable = ({ isReadOnly = false }: { isReadOnly?: boolean }) => {
   const [signups, setSignups] = useState<Signup[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
@@ -161,7 +169,7 @@ const SignupsTable = () => {
   const columns: [string, string][] = [
     ['full_name', 'Name'], ['', 'Email'], ['', 'Type'], ['', 'Tier'], ['', 'Code'],
     ['referrals_count', 'Referrals'], ['waitlist_position', 'Position'],
-    ['', 'Referred By'], ['created_at', 'Date'], ['', ''],
+    ['', 'Referred By'], ['created_at', 'Date'], ...(isReadOnly ? [] : [['', ''] as [string, string]]),
   ];
 
   const tierFilterOptions = [
@@ -232,23 +240,25 @@ const SignupsTable = () => {
                     <span className="font-body text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{s.user_type}</span>
                   </td>
                   <td className="py-3 px-2">
-                    <TierDropdown signup={s} onUpdate={fetchSignups} />
+                    <TierDropdown signup={s} onUpdate={fetchSignups} disabled={isReadOnly} />
                   </td>
                   <td className="font-body text-xs text-muted py-3 px-2 font-mono">{s.referral_code}</td>
                   <td className="font-body text-sm text-foreground py-3 px-2 font-bold">{s.referrals_count}</td>
                   <td className="font-body text-sm text-muted py-3 px-2">#{s.waitlist_position}</td>
                   <td className="font-body text-xs text-muted py-3 px-2 font-mono">{s.referred_by || '—'}</td>
                   <td className="font-body text-xs text-muted py-3 px-2">{new Date(s.created_at).toLocaleDateString()}</td>
-                  <td className="py-3 px-2">
-                    <button
-                      onClick={() => handleDelete(s)}
-                      disabled={deleting === s.id}
-                      className="text-muted hover:text-destructive transition-colors disabled:opacity-50"
-                      title="Delete signup"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
+                  {!isReadOnly && (
+                    <td className="py-3 px-2">
+                      <button
+                        onClick={() => handleDelete(s)}
+                        disabled={deleting === s.id}
+                        className="text-muted hover:text-destructive transition-colors disabled:opacity-50"
+                        title="Delete signup"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

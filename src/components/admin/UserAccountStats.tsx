@@ -25,7 +25,7 @@ interface Profile {
   deleted_at: string | null;
 }
 
-const UserAccountStats = () => {
+const UserAccountStats = ({ isReadOnly = false }: { isReadOnly?: boolean }) => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAccounts, setShowAccounts] = useState(false);
@@ -95,12 +95,14 @@ const UserAccountStats = () => {
     <div className="bg-surface rounded-xl border border-border p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-heading font-bold text-lg text-foreground">User Accounts</h2>
-        <button
-          onClick={() => setShowAccounts(!showAccounts)}
-          className="font-body text-sm text-primary hover:underline"
-        >
-          {showAccounts ? 'Hide Accounts' : 'Manage Accounts'}
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={() => setShowAccounts(!showAccounts)}
+            className="font-body text-sm text-primary hover:underline"
+          >
+            {showAccounts ? 'Hide Accounts' : 'Manage Accounts'}
+          </button>
+        )}
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {cards.map((c) => (
