@@ -39,7 +39,11 @@ const FooterSection = () => {
             </div>
           </div>
           <div className="border-t border-secondary-foreground/10 pt-6 text-center">
-            <p className="font-body text-xs text-secondary-foreground/40">© 2026 GegoBooks. All rights reserved.</p>
+            <p className="font-body text-xs text-secondary-foreground/40">
+              © 2026 GegoBooks. All rights reserved. Powered by{' '}
+              <a href="https://gegotics.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Gegotics Ltd</a>
+              {' '}— AI software solutions for Africa and the world.
+            </p>
           </div>
         </div>
       </footer>
