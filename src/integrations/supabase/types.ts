@@ -152,6 +152,16 @@ export type Database = {
       }
     }
     Functions: {
+      get_my_signup: {
+        Args: { p_email: string }
+        Returns: {
+          email: string
+          full_name: string
+          referral_code: string
+          referrals_count: number
+          waitlist_position: number
+        }[]
+      }
       get_waitlist_growth: {
         Args: { timeframe: string }
         Returns: {

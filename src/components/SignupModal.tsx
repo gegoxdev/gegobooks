@@ -43,19 +43,18 @@ const SignupModal = ({ isOpen, onClose, utmParams }: SignupModalProps) => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
+      const emailNormalized = form.email.trim().toLowerCase();
+      const { error } = await supabase
         .from('waitlist_signups')
         .insert({
           full_name: form.fullName.trim(),
-          email: form.email.trim().toLowerCase(),
+          email: emailNormalized,
           user_type: form.userType,
           referred_by: utmParams.ref || null,
           utm_source: utmParams.utm_source || null,
           utm_medium: utmParams.utm_medium || null,
           utm_campaign: utmParams.utm_campaign || null,
-        })
-        .select('referral_code, waitlist_position, referrals_count')
-        .single();
+        });
 
       if (error) {
         if (error.code === '23505') {
@@ -67,7 +66,11 @@ const SignupModal = ({ isOpen, onClose, utmParams }: SignupModalProps) => {
         return;
       }
 
-      setSignupData(data);
+      // Fetch signup data via secure RPC
+      const { data } = await supabase.rpc('get_my_signup', { p_email: emailNormalized });
+      if (data && Array.isArray(data) && data.length > 0) {
+        setSignupData(data[0] as any);
+      }
       setLoading(false);
     } catch {
       setErrors({ email: 'Network error. Please try again.' });
