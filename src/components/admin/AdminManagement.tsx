@@ -243,8 +243,10 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-border">
+                    <th className="font-body text-xs font-semibold text-muted py-3 px-2">Name</th>
                     <th className="font-body text-xs font-semibold text-muted py-3 px-2">Email</th>
                     <th className="font-body text-xs font-semibold text-muted py-3 px-2">Role</th>
+                    <th className="font-body text-xs font-semibold text-muted py-3 px-2">Tier</th>
                     <th className="font-body text-xs font-semibold text-muted py-3 px-2">Added</th>
                     {isMaster && <th className="font-body text-xs font-semibold text-muted py-3 px-2"></th>}
                   </tr>
