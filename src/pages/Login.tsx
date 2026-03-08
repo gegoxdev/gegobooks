@@ -67,6 +67,7 @@ const Login = () => {
     if (!fullName.trim()) { setError('Full name is required'); return; }
     if (fullName.trim().length > 200) { setError('Name is too long'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (password !== confirmPassword) { setError('Passwords do not match'); return; }
 
     setLoading(true);
     const { error: err } = await supabase.auth.signUp({
@@ -81,7 +82,9 @@ const Login = () => {
     if (err) {
       setError(err.message);
     } else {
-      setSuccess('Check your email for a confirmation link, then sign in.');
+      // Redirect to OTP verification page
+      const redirectPath = redirect ? `/login?redirect=${redirect}` : '/dashboard';
+      navigate(`/verify?email=${encodeURIComponent(email.trim().toLowerCase())}&redirect=${encodeURIComponent(redirectPath)}`);
     }
     setLoading(false);
   };
