@@ -380,6 +380,7 @@ export type Database = {
         }[]
       }
       get_admin_user_stats: { Args: never; Returns: Json }
+      get_invite_email: { Args: { invite_token: string }; Returns: string }
       get_my_signup: {
         Args: { p_email: string }
         Returns: {

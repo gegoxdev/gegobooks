@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Shield, Check } from 'lucide-react';
+import { Shield, Check, Lock } from 'lucide-react';
 import PasswordInput from '@/components/PasswordInput';
 
 interface AdminLoginProps {
@@ -20,11 +20,33 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
   const [accepting, setAccepting] = useState(false);
   const [mode, setMode] = useState<'login' | 'signup'>('login');
 
+  // Invite token handling
   const urlParams = new URLSearchParams(window.location.search);
   const inviteToken = urlParams.get('invite');
+  const [inviteEmail, setInviteEmail] = useState<string | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(!!inviteToken);
 
+  // OTP verification state
+  const [otpMode, setOtpMode] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [resending, setResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState('');
+
+  // Fetch invite email from token on mount
   useEffect(() => {
-    if (inviteToken) setMode('signup');
+    if (inviteToken) {
+      setMode('signup');
+      supabase.rpc('get_invite_email' as any, { invite_token: inviteToken }).then(({ data }) => {
+        if (data) {
+          setInviteEmail(data as string);
+          setEmail(data as string);
+        } else {
+          setError('This invite link is invalid or has expired.');
+        }
+        setInviteLoading(false);
+      });
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setLoggedInUser({ id: session.user.id, email: session.user.email || '' });
@@ -117,7 +139,6 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/admin${inviteToken ? `?invite=${inviteToken}` : ''}`,
       },
     });
     if (signupError) {
@@ -132,10 +153,58 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
         await handleAcceptByToken(inviteToken, data.user.id);
       }
     } else {
-      toast.success('Check your email to verify your account, then come back to accept the invite.');
+      // Email verification required — show inline OTP
+      setOtpMode(true);
+      toast.success('A 6-digit verification code has been sent to your email.');
     }
     setLoading(false);
   };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (otp.length < 6) { setError('Enter the 6-digit code'); return; }
+    setLoading(true);
+
+    const { data, error: err } = await supabase.auth.verifyOtp({
+      email,
+      token: otp,
+      type: 'signup',
+    });
+
+    if (err) {
+      setError(err.message);
+    } else if (data.user) {
+      setLoggedInUser({ id: data.user.id, email: data.user.email || '' });
+      if (inviteToken) {
+        await handleAcceptByToken(inviteToken, data.user.id);
+      } else {
+        onSuccess(data.user.id);
+      }
+    }
+    setLoading(false);
+  };
+
+  const handleResendOtp = async () => {
+    setResending(true);
+    setError('');
+    setResendSuccess('');
+    const { error: err } = await supabase.auth.resend({ type: 'signup', email });
+    if (err) setError(err.message);
+    else setResendSuccess('New code sent! Check your email.');
+    setResending(false);
+  };
+
+  const isEmailLocked = !!inviteEmail && mode === 'signup';
+
+  // Loading invite info
+  if (inviteLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse font-body text-muted">Loading invite...</div>
+      </div>
+    );
+  }
 
   // Show pending invite acceptance UI
   if (loggedInUser && pendingInvite && !accepting) {
@@ -180,6 +249,69 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
     );
   }
 
+  // OTP verification screen (inline, admin-specific)
+  if (otpMode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
+            <h1 className="font-heading font-bold text-2xl text-foreground">Verify your admin email</h1>
+            <p className="font-body text-sm text-muted mt-1">
+              We sent a 6-digit code to <span className="font-medium text-foreground">{email}</span>
+            </p>
+          </div>
+
+          <form onSubmit={handleVerifyOtp} className="bg-surface rounded-2xl shadow-lg border border-border p-8 space-y-4">
+            {error && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3">
+                <p className="text-destructive text-sm font-body">{error}</p>
+              </div>
+            )}
+            {resendSuccess && (
+              <div className="bg-primary/10 border border-primary/20 rounded-lg px-4 py-3">
+                <p className="text-primary text-sm font-body">{resendSuccess}</p>
+              </div>
+            )}
+
+            <div>
+              <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Verification code</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="000000"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                required
+                className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow text-center tracking-[0.5em] text-lg"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary text-primary-foreground font-body font-semibold py-3 rounded-lg disabled:opacity-50 hover:opacity-90 transition-opacity"
+            >
+              {loading ? 'Verifying...' : 'Verify & Accept Invite'}
+            </button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={resending}
+                className="font-body text-sm text-primary hover:underline disabled:opacity-50"
+              >
+                {resending ? 'Sending...' : "Didn't receive a code? Resend"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <form
@@ -189,11 +321,16 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
         <h1 className="font-heading font-bold text-xl text-foreground text-center">
           {mode === 'login' ? 'Admin Login' : 'Create Admin Account'}
         </h1>
-        {inviteToken && (
+        {inviteToken && inviteEmail && (
           <p className="font-body text-sm text-primary text-center bg-primary/10 rounded-lg px-3 py-2">
             {mode === 'signup'
-              ? 'Create an account to accept your admin invite'
+              ? `Create an account for ${inviteEmail} to accept your admin invite`
               : 'Sign in to accept your admin invite'}
+          </p>
+        )}
+        {inviteToken && !inviteEmail && (
+          <p className="font-body text-sm text-destructive text-center bg-destructive/10 rounded-lg px-3 py-2">
+            This invite link is invalid or has expired.
           </p>
         )}
         {error && <p className="text-destructive text-sm font-body text-center">{error}</p>}
@@ -208,14 +345,22 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
             className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground"
           />
         )}
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground"
-        />
+        <div className="relative">
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => !isEmailLocked && setEmail(e.target.value)}
+            readOnly={isEmailLocked}
+            required
+            className={`w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground ${
+              isEmailLocked ? 'bg-muted/10 cursor-not-allowed pr-10' : ''
+            }`}
+          />
+          {isEmailLocked && (
+            <Lock className="w-4 h-4 text-muted absolute right-3 top-1/2 -translate-y-1/2" />
+          )}
+        </div>
         <PasswordInput
           label="Password"
           value={password}
@@ -232,7 +377,7 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
         )}
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || (!!inviteToken && !inviteEmail)}
           className="w-full bg-primary text-primary-foreground font-body font-semibold py-3 rounded-lg disabled:opacity-50"
         >
           {loading
