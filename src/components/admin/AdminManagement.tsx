@@ -296,6 +296,9 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
                             </span>
                           )}
                         </td>
+                        <td className="py-3 px-2">
+                          <span className="font-body text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{a.tier || 'free'}</span>
+                        </td>
                         <td className="font-body text-xs text-muted py-3 px-2">
                           {new Date(a.created_at).toLocaleDateString()}
                         </td>
