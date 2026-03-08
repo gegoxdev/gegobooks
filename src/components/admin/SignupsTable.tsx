@@ -52,6 +52,14 @@ const TierDropdown = ({ signup, onUpdate, disabled }: { signup: Signup; onUpdate
     setOpen(false);
   };
 
+  if (disabled) {
+    return (
+      <span className={`font-body text-xs px-2 py-0.5 rounded-full font-medium ${tierColors[signup.tier] || tierColors.free}`}>
+        {tierLabels[signup.tier] || signup.tier}
+      </span>
+    );
+  }
+
   return (
     <div className="relative">
       <button
