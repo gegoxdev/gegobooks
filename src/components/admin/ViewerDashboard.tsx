@@ -15,6 +15,12 @@ interface ViewerData {
   countries: { country: string; users: number }[];
   signupGrowth: { date: string; signups: number }[];
   userStats: Record<string, number>;
+  arpu: number;
+  paidConversion: { conversion_pct: number; paid_users: number; total_signups: number };
+  avgReferrals: { avg_referrals: number; total_referrals: number; users_with_referrals: number };
+  churn: { churn_pct: number; deletion_requests: number };
+  tierFunnel: { tier: string; users: number; percentage: number }[];
+  sources: { source: string; signups: number; percentage: number }[];
 }
 
 interface ViewerDashboardProps {
