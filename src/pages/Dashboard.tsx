@@ -5,6 +5,7 @@ import ReferralDashboard from '@/components/ReferralDashboard';
 import { toast } from 'sonner';
 import { AlertTriangle } from 'lucide-react';
 import { openPaystackPopup, TIER_PRICES } from '@/lib/paystack';
+import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 
 const tierLabels: Record<string, string> = {
   free: 'Free Waitlist',
@@ -19,6 +20,7 @@ const tierColors: Record<string, string> = {
 };
 
 const Dashboard = () => {
+  useInactivityTimeout();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);

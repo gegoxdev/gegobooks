@@ -11,8 +11,10 @@ import ReferralLeaderboard from '@/components/admin/ReferralLeaderboard';
 import WaitlistProjection from '@/components/admin/WaitlistProjection';
 import SignupsTable from '@/components/admin/SignupsTable';
 import UserAccountStats from '@/components/admin/UserAccountStats';
+import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 
 const Admin = () => {
+  useInactivityTimeout();
   const [authed, setAuthed] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
 
