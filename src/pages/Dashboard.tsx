@@ -61,6 +61,42 @@ const Dashboard = () => {
     navigate('/');
   };
 
+  const handlePayment = (tierId: string) => {
+    if (!user) return;
+    const priceInfo = TIER_PRICES[tierId as keyof typeof TIER_PRICES];
+    if (!priceInfo) return;
+
+    openPaystackPopup({
+      email: user.email || '',
+      amount: priceInfo.amount,
+      metadata: { tier: tierId, user_id: user.id },
+      onSuccess: async (reference) => {
+        toast.loading('Verifying payment...');
+        try {
+          const { data: verifyResult, error } = await supabase.functions.invoke('verify-payment', {
+            body: { reference, tier: tierId },
+          });
+          toast.dismiss();
+          if (error || !verifyResult?.success) {
+            toast.error(verifyResult?.error || 'Payment verification failed. Please contact support.');
+          } else {
+            toast.success(`🎉 Upgraded to ${tierId === 'founder' ? 'Founder Circle' : 'Priority Access'}!`);
+            setProfile((p: any) => ({ ...p, tier: tierId }));
+            // Re-fetch waitlist data to get updated position
+            const { data: wlData } = await supabase.rpc('get_my_waitlist_status');
+            if (wlData && Array.isArray(wlData) && wlData.length > 0) {
+              setWaitlistData(wlData[0]);
+            }
+          }
+        } catch {
+          toast.dismiss();
+          toast.error('Payment verification failed. Please contact support.');
+        }
+      },
+      onClose: () => {},
+    });
+  };
+
   const handleRequestDeletion = async () => {
     setDeleteLoading(true);
     const { error } = await supabase.rpc('request_account_deletion');
