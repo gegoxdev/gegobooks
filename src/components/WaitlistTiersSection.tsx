@@ -73,11 +73,18 @@ const WaitlistTiersSection = () => {
   const [userTier, setUserTier] = useState<string | null>(null);
   const [isOnWaitlist, setIsOnWaitlist] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     const checkStatus = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setIsLoggedIn(false); return; }
+      if (!session) {
+        setIsLoggedIn(false);
+        setIsOnWaitlist(false);
+        setUserTier(null);
+        setAuthReady(true);
+        return;
+      }
       setIsLoggedIn(true);
 
       const [waitlistRes, profileRes] = await Promise.all([
@@ -87,15 +94,27 @@ const WaitlistTiersSection = () => {
 
       if (waitlistRes.data && Array.isArray(waitlistRes.data) && waitlistRes.data.length > 0) {
         setIsOnWaitlist(true);
+      } else {
+        setIsOnWaitlist(false);
       }
-      if (profileRes.data) {
-        setUserTier(profileRes.data.tier || 'free');
-      }
+
+      const tier = profileRes.data?.tier || 'free';
+      setUserTier(tier);
+      setAuthReady(true);
     };
 
     checkStatus();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { checkStatus(); });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        setIsLoggedIn(false);
+        setIsOnWaitlist(false);
+        setUserTier(null);
+        setAuthReady(true);
+      } else {
+        checkStatus();
+      }
+    });
     return () => subscription.unsubscribe();
   }, []);
 
