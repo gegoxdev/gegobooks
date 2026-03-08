@@ -5,7 +5,7 @@ interface FinalCTASectionProps {
 const FinalCTASection = ({ onOpenModal }: FinalCTASectionProps) => (
   <section className="py-16 md:py-24 bg-primary">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <div className="fade-up">
+      <div className="blur-in">
         <h2 className="font-heading font-bold text-2xl md:text-4xl text-primary-foreground">
           The future of business accounting in Africa starts here.
         </h2>

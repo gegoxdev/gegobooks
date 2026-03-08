@@ -24,14 +24,14 @@ const HeroSection = ({ onOpenModal }: HeroSectionProps) => {
   return (
     <section className="pt-24 pb-16 md:pt-32 md:pb-24 bg-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h1 className="font-heading font-bold text-3xl md:text-5xl text-foreground max-w-4xl mx-auto leading-tight">
+        <h1 className="blur-in font-heading font-bold text-3xl md:text-5xl text-foreground max-w-4xl mx-auto leading-tight">
           Accounting your business can understand. Just talk.
         </h1>
-        <p className="mt-6 font-body text-base md:text-lg text-muted max-w-xl mx-auto">
+        <p className="fade-up stagger-2 mt-6 font-body text-base md:text-lg text-muted max-w-xl mx-auto">
           GegoBooks is a voice-first AI accounting assistant that helps African businesses record sales, track expenses, and understand their finances — simply by speaking.
         </p>
 
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div className="fade-up stagger-3 mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
           <button
             onClick={onOpenModal}
             className="w-full sm:w-auto bg-primary text-primary-foreground font-body font-medium px-8 py-3 rounded-full hover:opacity-90 transition-opacity"
@@ -40,11 +40,11 @@ const HeroSection = ({ onOpenModal }: HeroSectionProps) => {
           </button>
         </div>
 
-        <p className="mt-4 text-sm text-muted font-body">
+        <p className="fade-up stagger-4 mt-4 text-sm text-muted font-body">
           Join 3,000+ early users waiting for launch
         </p>
 
-        <div className="mt-12 max-w-md mx-auto bg-surface rounded-2xl shadow-lg p-6 text-left border border-border">
+        <div className="scale-up mt-12 max-w-md mx-auto bg-surface rounded-2xl shadow-lg p-6 text-left border border-border">
           {/* Voice note chat bubble */}
           <div className="bg-soft-white rounded-2xl px-4 py-3 mb-4 max-w-[85%] flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">

@@ -20,7 +20,7 @@ const SolutionSection = () => (
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 max-w-5xl mx-auto">
         {steps.map((s, i) => (
-          <div key={s.step} className={`fade-up stagger-${Math.min(i + 1, 4)} text-center`}>
+          <div key={s.step} className={`fade-up stagger-${Math.min(i + 1, 5)} text-center`}>
             <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center text-3xl mb-3">
               {s.icon}
             </div>

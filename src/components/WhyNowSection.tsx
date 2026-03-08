@@ -15,7 +15,7 @@ const WhyNowSection = () => (
 
       <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
         {reasons.map((r, i) => (
-          <div key={i} className={`fade-up stagger-${i + 1} bg-soft-white rounded-xl border border-border p-6 text-center`}>
+          <div key={i} className={`scale-up stagger-${i + 1} bg-soft-white rounded-xl border border-border p-6 text-center`}>
             <div className="text-4xl mb-3">{r.icon}</div>
             <p className="font-heading font-bold text-2xl text-primary">{r.stat}</p>
             <h3 className="font-heading font-bold text-base text-foreground mt-1">{r.title}</h3>

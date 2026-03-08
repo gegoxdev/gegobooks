@@ -68,19 +68,71 @@
     font-family: 'Outfit', sans-serif;
   }
 
+  /* Scroll-triggered animations — content stays in DOM for SEO */
   .fade-up {
     opacity: 0;
     transform: translateY(24px);
-    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
-
   .fade-up.visible {
     opacity: 1;
     transform: translateY(0);
   }
 
+  .fade-left {
+    opacity: 0;
+    transform: translateX(-32px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .fade-left.visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .fade-right {
+    opacity: 0;
+    transform: translateX(32px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .fade-right.visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .scale-up {
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .scale-up.visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .blur-in {
+    opacity: 0;
+    filter: blur(8px);
+    transition: opacity 0.7s ease-out, filter 0.7s ease-out;
+  }
+  .blur-in.visible {
+    opacity: 1;
+    filter: blur(0);
+  }
+
+  /* Stagger delays */
   .stagger-1 { transition-delay: 0ms; }
-  .stagger-2 { transition-delay: 400ms; }
-  .stagger-3 { transition-delay: 800ms; }
-  .stagger-4 { transition-delay: 1200ms; }
+  .stagger-2 { transition-delay: 150ms; }
+  .stagger-3 { transition-delay: 300ms; }
+  .stagger-4 { transition-delay: 450ms; }
+  .stagger-5 { transition-delay: 600ms; }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .fade-up, .fade-left, .fade-right, .scale-up, .blur-in {
+      opacity: 1;
+      transform: none;
+      filter: none;
+      transition: none;
+    }
+  }
 }

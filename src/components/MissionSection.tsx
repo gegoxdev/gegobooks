@@ -7,7 +7,7 @@ const pillars = [
 const MissionSection = () => (
   <section className="py-16 md:py-24 bg-secondary">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="fade-up text-center max-w-3xl mx-auto mb-12">
+      <div className="blur-in text-center max-w-3xl mx-auto mb-12">
         <h2 className="font-heading font-bold text-2xl md:text-4xl text-secondary-foreground">
           Built for the next generation of African businesses.
         </h2>
@@ -15,7 +15,7 @@ const MissionSection = () => (
 
       <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
         {pillars.map((p, i) => (
-          <div key={p.title} className={`fade-up stagger-${i + 1} text-center`}>
+          <div key={p.title} className={`scale-up stagger-${i + 1} text-center`}>
             <div className="w-14 h-14 mx-auto bg-secondary-foreground/10 rounded-2xl flex items-center justify-center text-3xl mb-3">
               {p.icon}
             </div>
