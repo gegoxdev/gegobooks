@@ -42,10 +42,10 @@ const Admin = () => {
   }, [viewerToken]);
 
   const checkAdmin = async (userId: string) => {
-    const { data: role } = await supabase.rpc('get_admin_role', { _user_id: userId });
-    if (role) {
+    const { data } = await supabase.from('admin_users').select('id, role').eq('user_id', userId).maybeSingle();
+    if (data) {
       setAuthed(true);
-      setAdminRole((role || 'readonly') as AdminRole);
+      setAdminRole(((data as any).role || 'readonly') as AdminRole);
     }
     setAuthLoading(false);
   };
