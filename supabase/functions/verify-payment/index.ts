@@ -96,12 +96,26 @@ Deno.serve(async (req) => {
     // Verify the email matches
     const paymentEmail = verifyData.data.customer?.email?.toLowerCase();
     if (paymentEmail && userEmail && paymentEmail !== userEmail.toLowerCase()) {
-      // Allow it but log the mismatch — user may have used a different email on Paystack
       console.warn(`Email mismatch: payment=${paymentEmail}, user=${userEmail}`);
     }
 
     // Use service role to upgrade tier (bypasses RLS)
     const adminSupabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Check for replay attack — ensure reference hasn't been used before
+    const { error: refInsertError } = await adminSupabase
+      .from("used_payment_references")
+      .insert({ reference, user_id: userId, tier });
+
+    if (refInsertError) {
+      return new Response(JSON.stringify({ error: "Payment reference already used" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
