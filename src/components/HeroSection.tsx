@@ -44,7 +44,7 @@ const HeroSection = ({ onOpenModal }: HeroSectionProps) => {
           Join 3,000+ early users waiting for launch
         </p>
 
-        <div className="mt-12 max-w-md mx-auto bg-surface rounded-2xl shadow-lg p-6 text-left border border-border">
+        <div className="scale-up mt-12 max-w-md mx-auto bg-surface rounded-2xl shadow-lg p-6 text-left border border-border">
           {/* Voice note chat bubble */}
           <div className="bg-soft-white rounded-2xl px-4 py-3 mb-4 max-w-[85%] flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
