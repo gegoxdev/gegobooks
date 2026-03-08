@@ -247,16 +247,18 @@ const SignupsTable = ({ isReadOnly = false }: { isReadOnly?: boolean }) => {
                   <td className="font-body text-sm text-muted py-3 px-2">#{s.waitlist_position}</td>
                   <td className="font-body text-xs text-muted py-3 px-2 font-mono">{s.referred_by || '—'}</td>
                   <td className="font-body text-xs text-muted py-3 px-2">{new Date(s.created_at).toLocaleDateString()}</td>
-                  <td className="py-3 px-2">
-                    <button
-                      onClick={() => handleDelete(s)}
-                      disabled={deleting === s.id}
-                      className="text-muted hover:text-destructive transition-colors disabled:opacity-50"
-                      title="Delete signup"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
+                  {!isReadOnly && (
+                    <td className="py-3 px-2">
+                      <button
+                        onClick={() => handleDelete(s)}
+                        disabled={deleting === s.id}
+                        className="text-muted hover:text-destructive transition-colors disabled:opacity-50"
+                        title="Delete signup"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
