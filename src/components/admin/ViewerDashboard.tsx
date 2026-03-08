@@ -241,6 +241,44 @@ const ViewerDashboard = ({ token }: ViewerDashboardProps) => {
           </div>
         )}
 
+        {/* Acquisition Sources */}
+        {data.sources && data.sources.length > 0 && (
+          <div className="bg-surface rounded-xl border border-border p-6">
+            <h2 className="font-heading font-bold text-lg text-foreground mb-4">Acquisition Sources</h2>
+            <div className="space-y-2">
+              {data.sources.slice(0, 8).map((s, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <span className="font-body text-sm text-foreground capitalize">{s.source}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-body text-xs text-muted">{s.percentage}%</span>
+                    <span className="font-heading font-bold text-sm text-foreground">{s.signups}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tier Funnel */}
+        {data.tierFunnel && data.tierFunnel.length > 0 && (
+          <div className="bg-surface rounded-xl border border-border p-6">
+            <h2 className="font-heading font-bold text-lg text-foreground mb-4">Tier Distribution</h2>
+            <div className="space-y-3">
+              {data.tierFunnel.map((t) => (
+                <div key={t.tier}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-body text-sm text-foreground capitalize">{t.tier}</span>
+                    <span className="font-body text-xs text-muted">{t.users} ({t.percentage}%)</span>
+                  </div>
+                  <div className="w-full bg-muted/20 rounded-full h-2">
+                    <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${Math.max(t.percentage, 2)}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Country Distribution */}
         {data.countries.length > 0 && (
           <div className="bg-surface rounded-xl border border-border p-6">
