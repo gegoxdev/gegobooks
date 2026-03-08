@@ -1,15 +1,17 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-import Admin from "./pages/Admin";
-import Login from "./pages/Login";
-import ResetPassword from "./pages/ResetPassword";
-import VerifyOTP from "./pages/VerifyOTP";
-import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+
+const Admin = lazy(() => import("./pages/Admin"));
+const Login = lazy(() => import("./pages/Login"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const VerifyOTP = lazy(() => import("./pages/VerifyOTP"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 
 const queryClient = new QueryClient();
 
