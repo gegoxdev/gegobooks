@@ -221,6 +221,10 @@ export type Database = {
         Args: { signup_id: string }
         Returns: undefined
       }
+      admin_set_user_tier: {
+        Args: { new_tier: string; target_email: string }
+        Returns: undefined
+      }
       cancel_account_deletion: { Args: never; Returns: undefined }
       get_admin_signups_with_tiers: {
         Args: never
