@@ -74,7 +74,7 @@ interface TierCount {
   current_count: number;
 }
 
-const WaitlistTiersSection = () => {
+const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => {
   const navigate = useNavigate();
   const [showWaitlistForm, setShowWaitlistForm] = useState(false);
   const [pendingHref, setPendingHref] = useState('');
