@@ -19,6 +19,7 @@ interface AdminInvite {
   status: string;
   created_at: string;
   expires_at: string;
+  token: string;
 }
 
 const roleConfig: Record<string, { label: string; icon: typeof Shield; color: string; rank: number }> = {
