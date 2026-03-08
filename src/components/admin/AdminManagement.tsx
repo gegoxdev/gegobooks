@@ -347,22 +347,6 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
             </button>
           </form>
 
-          {/* Copy link banner */}
-          {copiedLink && (
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-4 flex items-center gap-3">
-              <p className="font-body text-sm text-foreground flex-1 truncate">{copiedLink}</p>
-              <button
-                onClick={() => handleCopyLink(copiedLink)}
-                className="bg-primary text-primary-foreground font-body text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-90 inline-flex items-center gap-1 whitespace-nowrap"
-              >
-                <Copy className="w-3 h-3" />
-                Copy Link
-              </button>
-              <button onClick={() => setCopiedLink(null)} className="text-muted hover:text-foreground">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          )}
 
           {/* Invites list */}
           {invitesLoading ? (
