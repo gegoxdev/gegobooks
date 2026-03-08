@@ -81,33 +81,17 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
     if (!inviteEmail.trim()) return;
     setSending(true);
 
-    const { data, error } = await supabase.functions.invoke('send-admin-invite', {
-      body: {
-        email: inviteEmail.trim(),
-        role: inviteRole,
-        siteUrl: window.location.origin,
-      },
+    const { data: token, error: inviteError } = await supabase.rpc('create_admin_invite' as any, {
+      target_email: inviteEmail.trim(),
+      invite_role: inviteRole,
     });
 
-    if (error) {
-      let errorMessage = error.message || 'Failed to send invite';
-      const errorResponse = (error as any)?.context;
-      if (errorResponse instanceof Response) {
-        try {
-          const parsed = await errorResponse.json();
-          if (parsed?.error) errorMessage = parsed.error;
-        } catch {
-          // ignore parse errors and use fallback message
-        }
-      }
-      toast.error(errorMessage);
-    } else if (data?.error) {
-      toast.error(data.error);
+    if (inviteError) {
+      toast.error(inviteError.message);
     } else {
-      toast.success(data.message);
-      if (data.inviteLink && !data.emailSent) {
-        setCopiedLink(data.inviteLink);
-      }
+      const inviteLink = `${window.location.origin}/admin?invite=${token}`;
+      setCopiedLink(inviteLink);
+      toast.success('Invite link created! Share it with the recipient.');
       setInviteEmail('');
       setInviteRole('readonly');
       fetchInvites();
