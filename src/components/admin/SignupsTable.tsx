@@ -24,7 +24,9 @@ const SignupsTable = () => {
   const [sortKey, setSortKey] = useState<SortKey>('created_at');
   const [sortAsc, setSortAsc] = useState(false);
   const [filter, setFilter] = useState('');
+  const [tierFilter, setTierFilter] = useState<string>('all');
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [tierCounts, setTierCounts] = useState<Record<string, number>>({});
 
   const fetchSignups = async () => {
     setLoading(true);

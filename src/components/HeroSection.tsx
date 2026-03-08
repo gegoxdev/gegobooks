@@ -45,8 +45,26 @@ const HeroSection = ({ onOpenModal }: HeroSectionProps) => {
         </p>
 
         <div className="mt-12 max-w-md mx-auto bg-surface rounded-2xl shadow-lg p-6 text-left border border-border">
-          <div className="bg-soft-white rounded-xl px-4 py-3 mb-4 inline-block max-w-[80%]">
-            <p className="font-body text-sm text-foreground">"Sold 5 bags of rice for ₦75,000"</p>
+          {/* Voice note chat bubble */}
+          <div className="bg-soft-white rounded-2xl px-4 py-3 mb-4 max-w-[85%] flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <span className="text-primary text-sm">🎙️</span>
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="flex gap-[2px] items-end h-4">
+                  {[3, 6, 4, 8, 5, 10, 7, 4, 9, 6, 3, 7, 5, 8, 4, 6, 10, 5, 3, 7].map((h, i) => (
+                    <div
+                      key={i}
+                      className="w-[3px] rounded-full bg-primary/60"
+                      style={{ height: `${h * 1.5}px` }}
+                    />
+                  ))}
+                </div>
+                <span className="font-body text-[10px] text-muted ml-auto">0:03</span>
+              </div>
+              <p className="font-body text-sm text-foreground font-medium">"Sold 5 bags of rice for ₦75,000"</p>
+            </div>
           </div>
           <div className="space-y-2">
             {checkItems.map((item, i) => (
