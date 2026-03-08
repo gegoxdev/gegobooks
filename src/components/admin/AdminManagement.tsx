@@ -411,7 +411,21 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
                               </>
                             )}
                           </div>
-                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Role legend */}
+      <div className="mt-4 pt-4 border-t border-border">
+        <p className="font-body text-xs text-muted mb-2">Role Hierarchy:</p>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(roleConfig).map(([key, rc]) => {
             const RoleIcon = rc.icon;
             return (
               <span key={key} className={`font-body text-xs px-2 py-1 rounded-full inline-flex items-center gap-1 ${rc.color}`}>
@@ -422,7 +436,7 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
           })}
         </div>
         <p className="font-body text-xs text-muted mt-2">
-          Master = full control • Admin = manage data • Approver = invite & view • Read Only = view only
+          Master = full control • Admin = manage data • Approver = invite &amp; view • Read Only = view only
         </p>
       </div>
     </div>
