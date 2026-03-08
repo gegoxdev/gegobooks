@@ -1,8 +1,9 @@
 const steps = [
   { step: '1', icon: '🎙️', title: 'Speak', description: '"Sold bread ₦3,000"' },
   { step: '2', icon: '🤖', title: 'AI Processes', description: 'Transaction recorded instantly' },
-  { step: '3', icon: '📊', title: 'See Results', description: 'Sales, expenses & profit updated' },
-  { step: '4', icon: '📈', title: 'Grow', description: 'Reports & insights on demand' },
+  { step: '3', icon: '✅', title: 'Accountants Review', description: 'Verified for accuracy & compliance' },
+  { step: '4', icon: '📊', title: 'See Results', description: 'Clean, verified financial reports' },
+  { step: '5', icon: '📈', title: 'Grow', description: 'Better decisions & growth' },
 ];
 
 const SolutionSection = () => (
@@ -17,9 +18,9 @@ const SolutionSection = () => (
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 max-w-5xl mx-auto">
         {steps.map((s, i) => (
-          <div key={s.step} className={`fade-up stagger-${i + 1} text-center`}>
+          <div key={s.step} className={`fade-up stagger-${Math.min(i + 1, 4)} text-center`}>
             <div className="w-16 h-16 mx-auto bg-primary/10 rounded-2xl flex items-center justify-center text-3xl mb-3">
               {s.icon}
             </div>
