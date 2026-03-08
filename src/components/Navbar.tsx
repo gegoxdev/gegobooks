@@ -15,10 +15,9 @@ const Navbar = ({ onJoinWaitlist }: NavbarProps) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToTiers = () => {
+  const handleJoinWaitlist = () => {
     setMenuOpen(false);
-    const el = document.getElementById('waitlist-tiers');
-    el?.scrollIntoView({ behavior: 'smooth' });
+    onJoinWaitlist();
   };
 
   return (
