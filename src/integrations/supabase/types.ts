@@ -53,21 +53,24 @@ export type Database = {
       admin_users: {
         Row: {
           created_at: string
+          email: string | null
           id: string
           role: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
+          email?: string | null
           id?: string
           role?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
+          email?: string | null
           id?: string
           role?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -341,6 +344,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: undefined
       }
+      admin_remove_admin_by_email: {
+        Args: { target_email: string }
+        Returns: undefined
+      }
       admin_set_user_tier: {
         Args: { new_tier: string; target_email: string }
         Returns: undefined
@@ -420,6 +427,11 @@ export type Database = {
         }[]
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_admin_email: { Args: { check_email: string }; Returns: boolean }
+      link_admin_user: {
+        Args: { admin_email: string; admin_user_id: string }
+        Returns: undefined
+      }
       list_admin_invites: {
         Args: never
         Returns: {
