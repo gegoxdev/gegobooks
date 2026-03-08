@@ -19,6 +19,14 @@ const Index = () => {
   const pageRef = useFadeUp();
   const utmParams = useUtmParams();
 
+  useEffect(() => {
+    if (window.location.hash === '#waitlist-tiers') {
+      setTimeout(() => {
+        document.getElementById('waitlist-tiers')?.scrollIntoView({ behavior: 'smooth' });
+      }, 500);
+    }
+  }, []);
+
   return (
     <div ref={pageRef} className="min-h-screen">
       <Navbar onJoinWaitlist={() => setModalOpen(true)} />
