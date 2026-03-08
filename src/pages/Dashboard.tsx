@@ -165,21 +165,27 @@ const Dashboard = () => {
         </div>
 
         {/* Upgrade Tier */}
-        {tier === 'free' && (
+        {tier !== 'founder' && (
           <div className="bg-surface rounded-xl border border-border p-6">
             <h2 className="font-heading font-bold text-lg text-foreground mb-2">Upgrade Your Access</h2>
             <p className="font-body text-sm text-muted mb-4">Skip the line with a paid tier.</p>
             <div className="grid md:grid-cols-2 gap-4">
-              <a href="https://paystack.com/pay/gegobooks-priority" target="_blank" rel="noopener noreferrer"
-                className="block bg-primary/5 border border-primary/20 rounded-lg p-4 hover:bg-primary/10 transition-colors">
-                <p className="font-heading font-bold text-foreground">Priority Waitlist</p>
-                <p className="font-body text-sm text-muted mt-1">$1 (₦1,500) — Jump the queue</p>
-              </a>
-              <a href="https://paystack.shop/pay/gegobooks-founders-circle" target="_blank" rel="noopener noreferrer"
-                className="block bg-accent/5 border border-accent/20 rounded-lg p-4 hover:bg-accent/10 transition-colors">
+              {tier === 'free' && (
+                <button
+                  onClick={() => handlePayment('priority')}
+                  className="block bg-primary/5 border border-primary/20 rounded-lg p-4 hover:bg-primary/10 transition-colors text-left"
+                >
+                  <p className="font-heading font-bold text-foreground">Priority Waitlist</p>
+                  <p className="font-body text-sm text-muted mt-1">$1 (₦1,500) — Jump the queue</p>
+                </button>
+              )}
+              <button
+                onClick={() => handlePayment('founder')}
+                className="block bg-accent/5 border border-accent/20 rounded-lg p-4 hover:bg-accent/10 transition-colors text-left"
+              >
                 <p className="font-heading font-bold text-foreground">Founder Circle ⭐</p>
                 <p className="font-body text-sm text-muted mt-1">$10 (₦15,000) — First access + perks</p>
-              </a>
+              </button>
             </div>
           </div>
         )}
