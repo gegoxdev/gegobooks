@@ -1,0 +1,1 @@
+UPDATE public.tier_limits SET max_capacity = 1000 WHERE tier_id = 'priority';

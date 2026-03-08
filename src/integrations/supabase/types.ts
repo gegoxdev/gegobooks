@@ -222,6 +222,22 @@ export type Database = {
         Returns: undefined
       }
       cancel_account_deletion: { Args: never; Returns: undefined }
+      get_admin_signups_with_tiers: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          referral_code: string
+          referrals_count: number
+          referred_by: string
+          tier: string
+          user_type: string
+          utm_source: string
+          waitlist_position: number
+        }[]
+      }
       get_admin_user_stats: { Args: never; Returns: Json }
       get_my_signup: {
         Args: { p_email: string }
