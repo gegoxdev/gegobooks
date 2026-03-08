@@ -259,7 +259,7 @@ const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => 
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto">
             {tiers.map((card, i) => {
               const joined = isTierJoined(card.id);
               const upgradeable = isUpgradeable(card.id);
@@ -268,7 +268,7 @@ const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => 
               return (
                 <div
                   key={card.title}
-                  className={`fade-up stagger-${i + 1} rounded-xl border p-6 flex flex-col ${
+                  className={`fade-up stagger-${i + 1} rounded-xl border p-4 sm:p-6 flex flex-col ${
                     joined
                       ? 'bg-muted/5 border-border opacity-80'
                       : card.recommended
