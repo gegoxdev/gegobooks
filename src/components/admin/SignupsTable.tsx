@@ -14,9 +14,22 @@ interface Signup {
   waitlist_position: number | null;
   created_at: string;
   utm_source: string | null;
+  tier: string;
 }
 
 type SortKey = 'created_at' | 'waitlist_position' | 'referrals_count' | 'full_name';
+
+const tierColors: Record<string, string> = {
+  free: 'bg-muted/20 text-muted',
+  priority: 'bg-primary/10 text-primary',
+  founder: 'bg-accent/10 text-accent',
+};
+
+const tierLabels: Record<string, string> = {
+  free: 'Free',
+  priority: 'Priority',
+  founder: 'Founder',
+};
 
 const SignupsTable = () => {
   const [signups, setSignups] = useState<Signup[]>([]);
@@ -26,11 +39,10 @@ const SignupsTable = () => {
   const [filter, setFilter] = useState('');
   const [tierFilter, setTierFilter] = useState<string>('all');
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [tierCounts, setTierCounts] = useState<Record<string, number>>({});
 
   const fetchSignups = async () => {
     setLoading(true);
-    const { data } = await supabase.from('waitlist_signups').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase.rpc('get_admin_signups_with_tiers' as any);
     if (data) setSignups(data as Signup[]);
     setLoading(false);
   };
@@ -62,6 +74,7 @@ const SignupsTable = () => {
   };
 
   const filtered = signups
+    .filter((s) => tierFilter === 'all' || s.tier === tierFilter)
     .filter((s) => !filter || s.full_name.toLowerCase().includes(filter.toLowerCase()) || s.email.toLowerCase().includes(filter.toLowerCase()))
     .sort((a, b) => {
       const av = a[sortKey] ?? '';
@@ -71,10 +84,16 @@ const SignupsTable = () => {
       return 0;
     });
 
+  // Count signups per tier
+  const tierCountMap = signups.reduce<Record<string, number>>((acc, s) => {
+    acc[s.tier] = (acc[s.tier] || 0) + 1;
+    return acc;
+  }, {});
+
   const exportCSV = () => {
-    const headers = ['Name', 'Email', 'Type', 'Referral Code', 'Referrals', 'Position', 'Referred By', 'UTM Source', 'Signed Up'];
+    const headers = ['Name', 'Email', 'Type', 'Tier', 'Referral Code', 'Referrals', 'Position', 'Referred By', 'UTM Source', 'Signed Up'];
     const rows = filtered.map((s) => [
-      s.full_name, s.email, s.user_type, s.referral_code || '', s.referrals_count,
+      s.full_name, s.email, s.user_type, s.tier, s.referral_code || '', s.referrals_count,
       s.waitlist_position || '', s.referred_by || '', s.utm_source || '', new Date(s.created_at).toLocaleDateString(),
     ]);
     const csv = [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
@@ -88,16 +107,38 @@ const SignupsTable = () => {
   };
 
   const columns: [string, string][] = [
-    ['full_name', 'Name'], ['', 'Email'], ['', 'Type'], ['', 'Code'],
+    ['full_name', 'Name'], ['', 'Email'], ['', 'Type'], ['', 'Tier'], ['', 'Code'],
     ['referrals_count', 'Referrals'], ['waitlist_position', 'Position'],
     ['', 'Referred By'], ['created_at', 'Date'], ['', ''],
+  ];
+
+  const tierFilterOptions = [
+    { value: 'all', label: `All (${signups.length})` },
+    { value: 'free', label: `Free (${tierCountMap.free || 0})` },
+    { value: 'priority', label: `Priority (${tierCountMap.priority || 0})` },
+    { value: 'founder', label: `Founder (${tierCountMap.founder || 0})` },
   ];
 
   return (
     <div className="bg-surface rounded-xl border border-border p-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
         <h2 className="font-heading font-bold text-lg text-foreground">All Signups ({filtered.length})</h2>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            {tierFilterOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setTierFilter(opt.value)}
+                className={`font-body text-xs px-3 py-2 transition-colors ${
+                  tierFilter === opt.value
+                    ? 'bg-primary text-primary-foreground font-semibold'
+                    : 'bg-surface text-muted hover:bg-muted/10'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
           <input
             placeholder="Search name or email..."
             value={filter}
@@ -137,6 +178,11 @@ const SignupsTable = () => {
                   <td className="font-body text-sm text-muted py-3 px-2">{s.email}</td>
                   <td className="py-3 px-2">
                     <span className="font-body text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{s.user_type}</span>
+                  </td>
+                  <td className="py-3 px-2">
+                    <span className={`font-body text-xs px-2 py-0.5 rounded-full font-medium ${tierColors[s.tier] || tierColors.free}`}>
+                      {tierLabels[s.tier] || s.tier}
+                    </span>
                   </td>
                   <td className="font-body text-xs text-muted py-3 px-2 font-mono">{s.referral_code}</td>
                   <td className="font-body text-sm text-foreground py-3 px-2 font-bold">{s.referrals_count}</td>
