@@ -259,7 +259,7 @@ const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => 
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 max-w-4xl mx-auto">
             {tiers.map((card, i) => {
               const joined = isTierJoined(card.id);
               const upgradeable = isUpgradeable(card.id);
