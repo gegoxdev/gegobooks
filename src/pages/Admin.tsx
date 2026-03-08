@@ -14,7 +14,7 @@ import UserAccountStats from '@/components/admin/UserAccountStats';
 import AdminManagement from '@/components/admin/AdminManagement';
 import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 
-type AdminRole = 'readonly' | 'admin' | 'master';
+type AdminRole = 'readonly' | 'approver' | 'admin' | 'master';
 
 const Admin = () => {
   useInactivityTimeout();
