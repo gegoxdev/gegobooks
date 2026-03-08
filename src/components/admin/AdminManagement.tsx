@@ -399,7 +399,7 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
                                   className="text-primary hover:text-primary/80 transition-colors"
                                   title="Copy invite link"
                                 >
-                                  {copiedId === inv.id ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                                  {copiedId === inv.id ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
                                 </button>
                                 <button
                                   onClick={() => handleRevokeInvite(inv.id)}
