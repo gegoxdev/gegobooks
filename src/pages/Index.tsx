@@ -13,11 +13,13 @@ import FooterSection from '@/components/FooterSection';
 import SignupModal from '@/components/SignupModal';
 import { useFadeUp } from '@/hooks/useFadeUp';
 import { useUtmParams } from '@/hooks/useUtmParams';
+import { useWaitlistStatus } from '@/hooks/useWaitlistStatus';
 
 const Index = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const pageRef = useFadeUp();
   const utmParams = useUtmParams();
+  const waitlistStatus = useWaitlistStatus();
 
   useEffect(() => {
     if (window.location.hash === '#waitlist-tiers') {
@@ -45,6 +47,7 @@ const Index = () => {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         utmParams={utmParams}
+        waitlistStatus={waitlistStatus}
       />
     </div>
   );
