@@ -114,7 +114,7 @@ const WaitlistTiersSection = () => {
                 href={card.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={(e) => handlePayClick(e, card.href)}
+                onClick={(e) => handlePayClick(e)}
                 className={`mt-6 w-full font-body font-medium py-3 rounded-lg transition-opacity hover:opacity-90 text-center block ${
                   card.recommended
                     ? 'bg-accent text-accent-foreground'
