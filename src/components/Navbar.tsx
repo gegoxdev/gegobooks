@@ -63,7 +63,7 @@ const Navbar = ({ onJoinWaitlist }: NavbarProps) => {
       {menuOpen && (
         <div className="md:hidden bg-surface shadow-lg px-4 py-4">
           <button
-            onClick={scrollToTiers}
+            onClick={handleJoinWaitlist}
             className="w-full bg-primary text-primary-foreground font-body font-medium px-5 py-3 rounded-lg"
           >
             Join Waitlist
