@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import logo from '@/assets/gegobooks-logo.jpg';
+import logo from '@/assets/gegobooks-logo.png';
 
 interface NavbarProps {
   onJoinWaitlist: () => void;

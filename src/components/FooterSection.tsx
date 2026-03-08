@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import logo from '@/assets/gegobooks-logo.jpg';
+import logo from '@/assets/gegobooks-logo.png';
 
 const FooterSection = () => {
   const [showPrivacy, setShowPrivacy] = useState(false);
