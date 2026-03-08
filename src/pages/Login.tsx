@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable/index';
 import logo from '@/assets/gegobooks-logo.jpg';
 import PasswordInput from '@/components/PasswordInput';
 
