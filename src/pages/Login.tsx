@@ -21,7 +21,6 @@ const Login = () => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const getRedirectPath = () => {
     if (redirect === 'waitlist-tiers') return '/#waitlist-tiers';
