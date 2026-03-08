@@ -71,7 +71,7 @@ const Login = () => {
       if (signInError) {
         setError(signInError.message);
       } else {
-        navigate('/dashboard');
+        navigate(getRedirectPath());
       }
     }
     setLoading(false);
