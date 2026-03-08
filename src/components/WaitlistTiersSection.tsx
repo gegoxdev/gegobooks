@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckCircle, ArrowUpCircle, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { openPaystackPopup, TIER_PRICES } from '@/lib/paystack';
 
 const userTypes = [
   { value: 'user', label: 'Business Owner' },
@@ -23,7 +24,6 @@ const tiers = [
     ],
     cta: 'Join Free Waitlist',
     upgradeCta: 'Current Tier',
-    href: '',
     recommended: false,
     isFree: true,
   },
@@ -40,7 +40,6 @@ const tiers = [
     ],
     cta: 'Get Priority Access',
     upgradeCta: 'Upgrade to Priority',
-    href: 'https://paystack.com/pay/gegobooks-priority',
     recommended: false,
     isFree: false,
   },
@@ -58,13 +57,11 @@ const tiers = [
     ],
     cta: 'Join Founder Circle',
     upgradeCta: 'Upgrade to Founder Circle',
-    href: 'https://paystack.shop/pay/gegobooks-founders-circle',
     recommended: true,
     isFree: false,
   },
 ];
 
-// Map tier IDs to hierarchy: higher = better
 const tierRank: Record<string, number> = { free: 0, priority: 1, founder: 2 };
 
 interface TierCount {
@@ -77,10 +74,11 @@ interface TierCount {
 const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => {
   const navigate = useNavigate();
   const [showWaitlistForm, setShowWaitlistForm] = useState(false);
-  const [pendingHref, setPendingHref] = useState('');
+  const [pendingTierId, setPendingTierId] = useState('');
   const [form, setForm] = useState({ fullName: '', email: '', userType: 'user' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formLoading, setFormLoading] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
   const [userTier, setUserTier] = useState<string | null>(null);
   const [isOnWaitlist, setIsOnWaitlist] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -91,16 +89,13 @@ const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => 
     const { data } = await supabase.rpc('get_tier_counts');
     if (data && Array.isArray(data)) {
       const map: Record<string, TierCount> = {};
-      data.forEach((row: any) => {
-        map[row.tier_id] = row;
-      });
+      data.forEach((row: any) => { map[row.tier_id] = row; });
       setTierCounts(map);
     }
   };
 
   useEffect(() => {
     fetchTierCounts();
-
     const checkStatus = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -111,25 +106,15 @@ const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => 
         return;
       }
       setIsLoggedIn(true);
-
       const [waitlistRes, profileRes] = await Promise.all([
         supabase.rpc('get_my_waitlist_status'),
         supabase.from('profiles').select('tier').eq('user_id', session.user.id).maybeSingle(),
       ]);
-
-      if (waitlistRes.data && Array.isArray(waitlistRes.data) && waitlistRes.data.length > 0) {
-        setIsOnWaitlist(true);
-      } else {
-        setIsOnWaitlist(false);
-      }
-
-      const tier = profileRes.data?.tier || 'free';
-      setUserTier(tier);
+      setIsOnWaitlist(!!(waitlistRes.data && Array.isArray(waitlistRes.data) && waitlistRes.data.length > 0));
+      setUserTier(profileRes.data?.tier || 'free');
       setAuthReady(true);
     };
-
     checkStatus();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         setIsLoggedIn(false);
@@ -143,9 +128,50 @@ const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => 
     return () => subscription.unsubscribe();
   }, []);
 
+  const initiatePayment = async (tierId: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const priceInfo = TIER_PRICES[tierId as keyof typeof TIER_PRICES];
+    if (!priceInfo) return;
+
+    setPaymentLoading(true);
+
+    openPaystackPopup({
+      email: session.user.email || '',
+      amount: priceInfo.amount,
+      metadata: { tier: tierId, user_id: session.user.id },
+      onSuccess: async (reference) => {
+        toast.loading('Verifying payment...');
+        try {
+          const { data: verifyResult, error } = await supabase.functions.invoke('verify-payment', {
+            body: { reference, tier: tierId },
+          });
+          if (error || !verifyResult?.success) {
+            toast.dismiss();
+            toast.error(verifyResult?.error || 'Payment verification failed. Please contact support.');
+          } else {
+            toast.dismiss();
+            toast.success(`🎉 Upgraded to ${tierId === 'founder' ? 'Founder Circle' : 'Priority Access'}!`);
+            setUserTier(tierId);
+            fetchTierCounts();
+            // Redirect to dashboard
+            navigate('/dashboard');
+          }
+        } catch {
+          toast.dismiss();
+          toast.error('Payment verification failed. Please contact support.');
+        }
+        setPaymentLoading(false);
+      },
+      onClose: () => {
+        setPaymentLoading(false);
+      },
+    });
+  };
+
   const handleTierClick = async (e: React.MouseEvent, tier: typeof tiers[0]) => {
     e.preventDefault();
-
     if (tier.isFree) {
       onOpenModal?.();
       return;
@@ -157,29 +183,24 @@ const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => 
       return;
     }
 
-    // Check if user is on the waitlist
     const { data } = await supabase.rpc('get_my_waitlist_status');
     if (data && Array.isArray(data) && data.length > 0) {
-      // User is on waitlist — open payment link for upgrade
-      window.open(tier.href, '_blank', 'noopener,noreferrer');
+      initiatePayment(tier.id);
     } else {
       setForm((f) => ({ ...f, email: session.user.email || '', fullName: session.user.user_metadata?.full_name || '' }));
-      setPendingHref(tier.href);
+      setPendingTierId(tier.id);
       setShowWaitlistForm(true);
     }
   };
 
   const handleUpgrade = async (e: React.MouseEvent, tier: typeof tiers[0]) => {
     e.preventDefault();
-
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate('/login?redirect=waitlist-tiers');
       return;
     }
-
-    // Open payment link — after payment, user updates tier via dashboard or webhook
-    window.open(tier.href, '_blank', 'noopener,noreferrer');
+    initiatePayment(tier.id);
   };
 
   const validate = () => {
@@ -205,8 +226,10 @@ const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => 
 
     if (error) {
       if (error.code === '23505') {
-        window.open(pendingHref, '_blank', 'noopener,noreferrer');
+        // Already on waitlist — proceed to payment
         setShowWaitlistForm(false);
+        setIsOnWaitlist(true);
+        initiatePayment(pendingTierId);
       } else {
         setErrors({ email: 'Something went wrong. Please try again.' });
       }
@@ -217,21 +240,19 @@ const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => 
     setFormLoading(false);
     setShowWaitlistForm(false);
     setIsOnWaitlist(true);
-    window.open(pendingHref, '_blank', 'noopener,noreferrer');
+    initiatePayment(pendingTierId);
   };
 
   const isTierJoined = (tierId: string) => {
     if (!authReady || !isLoggedIn || !isOnWaitlist) return false;
     const currentRank = tierRank[userTier ?? 'free'] ?? 0;
-    const tierCardRank = tierRank[tierId] ?? 0;
-    return tierCardRank <= currentRank;
+    return tierRank[tierId] <= currentRank;
   };
 
   const isUpgradeable = (tierId: string) => {
     if (!authReady || !isLoggedIn || !isOnWaitlist) return false;
     const currentRank = tierRank[userTier ?? 'free'] ?? 0;
-    const tierCardRank = tierRank[tierId] ?? 0;
-    return tierCardRank > currentRank;
+    return tierRank[tierId] > currentRank;
   };
 
   const getTierCapacityDisplay = (tierId: string) => {
@@ -291,7 +312,6 @@ const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => 
                   </p>
                   <p className="font-body text-sm text-muted mt-2">{card.description}</p>
 
-                  {/* Tier capacity indicator */}
                   {capacity && (
                     <div className="mt-3 flex items-center gap-2">
                       <Users className="w-3.5 h-3.5 text-muted" />
@@ -338,19 +358,21 @@ const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => 
                   ) : upgradeable ? (
                     <button
                       onClick={(e) => handleUpgrade(e, card)}
-                      className={`mt-6 w-full font-body font-medium py-3 rounded-lg transition-opacity hover:opacity-90 text-center flex items-center justify-center gap-2 ${
+                      disabled={paymentLoading}
+                      className={`mt-6 w-full font-body font-medium py-3 rounded-lg transition-opacity hover:opacity-90 text-center flex items-center justify-center gap-2 disabled:opacity-50 ${
                         card.recommended
                           ? 'bg-accent text-accent-foreground'
                           : 'bg-primary text-primary-foreground'
                       }`}
                     >
                       <ArrowUpCircle className="w-4 h-4" />
-                      {card.upgradeCta}
+                      {paymentLoading ? 'Processing...' : card.upgradeCta}
                     </button>
                   ) : (
                     <button
                       onClick={(e) => handleTierClick(e as any, card)}
-                      className={`mt-6 w-full font-body font-medium py-3 rounded-lg transition-opacity hover:opacity-90 text-center block ${
+                      disabled={paymentLoading}
+                      className={`mt-6 w-full font-body font-medium py-3 rounded-lg transition-opacity hover:opacity-90 text-center block disabled:opacity-50 ${
                         card.recommended
                           ? 'bg-accent text-accent-foreground'
                           : card.isFree
@@ -358,7 +380,7 @@ const WaitlistTiersSection = ({ onOpenModal }: { onOpenModal?: () => void }) => 
                             : 'bg-primary text-primary-foreground'
                       }`}
                     >
-                      {card.cta}
+                      {paymentLoading ? 'Processing...' : card.cta}
                     </button>
                   )}
                 </div>
