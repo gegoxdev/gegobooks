@@ -100,10 +100,12 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
     setSending(false);
   };
 
-  const handleCopyLink = async (link: string) => {
+  const handleCopyInviteLink = async (inv: AdminInvite) => {
+    const link = `${window.location.origin}/admin?invite=${inv.token}`;
     await navigator.clipboard.writeText(link);
-    toast.success('Invite link copied!');
-    setCopiedLink(null);
+    setCopiedId(inv.id);
+    toast.success(`Invite link for ${inv.email} copied!`);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleRevokeInvite = async (inviteId: string) => {
