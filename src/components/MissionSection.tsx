@@ -7,7 +7,7 @@ const pillars = [
 const MissionSection = () => (
   <section className="py-16 md:py-24 bg-secondary">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="fade-up text-center max-w-3xl mx-auto mb-12">
+      <div className="blur-in text-center max-w-3xl mx-auto mb-12">
         <h2 className="font-heading font-bold text-2xl md:text-4xl text-secondary-foreground">
           Built for the next generation of African businesses.
         </h2>
