@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Signup {
@@ -29,6 +29,59 @@ const tierLabels: Record<string, string> = {
   free: 'Free',
   priority: 'Priority',
   founder: 'Founder',
+};
+
+const TierDropdown = ({ signup, onUpdate }: { signup: Signup; onUpdate: () => void }) => {
+  const [open, setOpen] = useState(false);
+  const [updating, setUpdating] = useState(false);
+
+  const handleTierChange = async (newTier: string) => {
+    if (newTier === signup.tier) { setOpen(false); return; }
+    setUpdating(true);
+    const { error } = await supabase.rpc('admin_set_user_tier' as any, {
+      target_email: signup.email,
+      new_tier: newTier,
+    });
+    if (error) {
+      toast.error(`Failed to update tier: ${error.message}`);
+    } else {
+      toast.success(`${signup.full_name} updated to ${tierLabels[newTier]}`);
+      onUpdate();
+    }
+    setUpdating(false);
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        disabled={updating}
+        className={`font-body text-xs px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity ${tierColors[signup.tier] || tierColors.free}`}
+      >
+        {updating ? '...' : tierLabels[signup.tier] || signup.tier}
+        <ChevronDown className="w-3 h-3" />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute z-50 top-full left-0 mt-1 bg-surface border border-border rounded-lg shadow-lg py-1 min-w-[100px]">
+            {Object.entries(tierLabels).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => handleTierChange(key)}
+                className={`block w-full text-left font-body text-xs px-3 py-1.5 hover:bg-muted/10 transition-colors ${
+                  key === signup.tier ? 'font-bold text-foreground' : 'text-muted'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
 };
 
 const SignupsTable = () => {
@@ -84,7 +137,6 @@ const SignupsTable = () => {
       return 0;
     });
 
-  // Count signups per tier
   const tierCountMap = signups.reduce<Record<string, number>>((acc, s) => {
     acc[s.tier] = (acc[s.tier] || 0) + 1;
     return acc;
@@ -180,9 +232,7 @@ const SignupsTable = () => {
                     <span className="font-body text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{s.user_type}</span>
                   </td>
                   <td className="py-3 px-2">
-                    <span className={`font-body text-xs px-2 py-0.5 rounded-full font-medium ${tierColors[s.tier] || tierColors.free}`}>
-                      {tierLabels[s.tier] || s.tier}
-                    </span>
+                    <TierDropdown signup={s} onUpdate={fetchSignups} />
                   </td>
                   <td className="font-body text-xs text-muted py-3 px-2 font-mono">{s.referral_code}</td>
                   <td className="font-body text-sm text-foreground py-3 px-2 font-bold">{s.referrals_count}</td>
