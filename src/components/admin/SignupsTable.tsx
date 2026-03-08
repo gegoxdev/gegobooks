@@ -240,7 +240,7 @@ const SignupsTable = ({ isReadOnly = false }: { isReadOnly?: boolean }) => {
                     <span className="font-body text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{s.user_type}</span>
                   </td>
                   <td className="py-3 px-2">
-                    <TierDropdown signup={s} onUpdate={fetchSignups} />
+                    <TierDropdown signup={s} onUpdate={fetchSignups} disabled={isReadOnly} />
                   </td>
                   <td className="font-body text-xs text-muted py-3 px-2 font-mono">{s.referral_code}</td>
                   <td className="font-body text-sm text-foreground py-3 px-2 font-bold">{s.referrals_count}</td>
