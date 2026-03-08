@@ -106,6 +106,31 @@ Deno.serve(async (req) => {
           countries: countryRes.data || [],
           signupGrowth: signupGrowth || [],
           userStats: userStatsRes.data || {},
+          arpu: Number(arpuRes.data?.arpu_ngn) || 0,
+          paidConversion: {
+            conversion_pct: Number(convRateRes.data?.conversion_pct) || 0,
+            paid_users: Number(convRateRes.data?.paid_users) || 0,
+            total_signups: Number(convRateRes.data?.total_signups) || 0,
+          },
+          avgReferrals: {
+            avg_referrals: Number(avgRefRes.data?.avg_referrals) || 0,
+            total_referrals: Number(avgRefRes.data?.total_referrals) || 0,
+            users_with_referrals: Number(avgRefRes.data?.users_with_referrals) || 0,
+          },
+          churn: {
+            churn_pct: Number(churnRes.data?.churn_pct) || 0,
+            deletion_requests: Number(churnRes.data?.deletion_requests) || 0,
+          },
+          tierFunnel: (funnelRes.data || []).map((r: any) => ({
+            tier: r.tier,
+            users: Number(r.users),
+            percentage: Number(r.percentage),
+          })),
+          sources: (sourcesRes.data || []).map((r: any) => ({
+            source: r.source,
+            signups: Number(r.signups),
+            percentage: Number(r.percentage),
+          })),
         },
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
