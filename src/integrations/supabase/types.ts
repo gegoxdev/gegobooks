@@ -50,54 +50,24 @@ export type Database = {
         }
         Relationships: []
       }
-      admin_otps: {
-        Row: {
-          created_at: string
-          email: string
-          expires_at: string
-          id: string
-          otp_code: string
-          used: boolean
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          expires_at?: string
-          id?: string
-          otp_code: string
-          used?: boolean
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          otp_code?: string
-          used?: boolean
-        }
-        Relationships: []
-      }
       admin_users: {
         Row: {
           created_at: string
-          email: string | null
           id: string
           role: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string
-          email?: string | null
           id?: string
           role?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string
-          email?: string | null
           id?: string
           role?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -371,10 +341,6 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: undefined
       }
-      admin_remove_admin_by_email: {
-        Args: { target_email: string }
-        Returns: undefined
-      }
       admin_set_user_tier: {
         Args: { new_tier: string; target_email: string }
         Returns: undefined
@@ -393,7 +359,6 @@ export type Database = {
         Args: { invite_role: string; target_email: string }
         Returns: string
       }
-      create_admin_otp: { Args: { admin_email: string }; Returns: string }
       create_viewer_link: {
         Args: { link_expires_at?: string; link_label: string }
         Returns: string
@@ -455,11 +420,6 @@ export type Database = {
         }[]
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
-      is_admin_email: { Args: { check_email: string }; Returns: boolean }
-      link_admin_user: {
-        Args: { admin_email: string; admin_user_id: string }
-        Returns: undefined
-      }
       list_admin_invites: {
         Args: never
         Returns: {
@@ -491,10 +451,6 @@ export type Database = {
       revoke_admin_invite: { Args: { invite_id: string }; Returns: undefined }
       revoke_viewer_link: { Args: { link_id: string }; Returns: undefined }
       upgrade_tier: { Args: { new_tier: string }; Returns: undefined }
-      verify_admin_otp: {
-        Args: { admin_email: string; otp: string }
-        Returns: boolean
-      }
     }
     Enums: {
       [_ in never]: never
