@@ -60,9 +60,19 @@ const WaitlistTiersSection = () => {
 
         {showAuthPrompt && (
           <div className="mb-8 max-w-md mx-auto bg-accent/10 border border-accent/30 rounded-xl p-4 text-center">
-            <p className="font-body text-sm text-foreground mb-2">Sign in to see your ranking before paying</p>
-            <p className="font-body text-xs text-muted">Please sign up for the waitlist first, then sign in to access paid tiers.</p>
-            <button onClick={() => setShowAuthPrompt(false)} className="mt-2 font-body text-xs text-primary hover:underline">Dismiss</button>
+            <p className="font-body text-sm text-foreground mb-2">Sign in to manage your access tier</p>
+            <p className="font-body text-xs text-muted mb-3">Create an account or sign in to access paid tiers and see your ranking.</p>
+            <div className="flex justify-center gap-2">
+              <button
+                onClick={() => navigate('/login')}
+                className="font-body text-xs font-semibold bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
+              >
+                Sign In / Sign Up
+              </button>
+              <button onClick={() => setShowAuthPrompt(false)} className="font-body text-xs text-muted hover:underline px-2">
+                Dismiss
+              </button>
+            </div>
           </div>
         )}
 
