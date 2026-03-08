@@ -331,7 +331,9 @@ export type Database = {
           admin_id: string
           created_at: string
           email: string
+          full_name: string
           role: string
+          tier: string
           user_id: string
         }[]
       }
