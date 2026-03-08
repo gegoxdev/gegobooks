@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Shield, Check } from 'lucide-react';
+import PasswordInput from '@/components/PasswordInput';
 
 interface AdminLoginProps {
   onSuccess: (userId: string) => void;
@@ -10,24 +11,27 @@ interface AdminLoginProps {
 const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ id: string; email: string } | null>(null);
   const [pendingInvite, setPendingInvite] = useState<{ id: string; role: string; invited_by_email: string } | null>(null);
   const [accepting, setAccepting] = useState(false);
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
 
-  // Check for invite token in URL
   const urlParams = new URLSearchParams(window.location.search);
   const inviteToken = urlParams.get('invite');
 
   useEffect(() => {
-    // Check if already logged in but not admin
+    if (inviteToken) setMode('signup');
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setLoggedInUser({ id: session.user.id, email: session.user.email || '' });
-        checkPendingInvite();
         if (inviteToken) {
           handleAcceptByToken(inviteToken, session.user.id);
+        } else {
+          checkPendingInvite();
         }
       }
     });
@@ -48,7 +52,6 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
       toast.error(acceptError.message);
     } else {
       toast.success('Invite accepted! You are now an admin.');
-      // Clean URL
       window.history.replaceState({}, '', '/admin');
       onSuccess(userId);
     }
@@ -57,15 +60,12 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
 
   const handleAcceptPending = async () => {
     if (!loggedInUser) return;
-    // Need to fetch the token from invite to accept it
-    // We use check_my_admin_invite which returns the invite, then accept by looking up the token
-    // Actually we need to accept by token. Let's fetch it from admin_invites
     const { data: inviteData } = await supabase
       .from('admin_invites')
       .select('token')
       .eq('id', pendingInvite?.id)
       .single();
-    
+
     if (inviteData?.token) {
       await handleAcceptByToken(inviteData.token, loggedInUser.id);
     } else {
@@ -85,12 +85,9 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
     }
     if (data.user) {
       setLoggedInUser({ id: data.user.id, email: data.user.email || '' });
-
-      // Check for invite token in URL
       if (inviteToken) {
         await handleAcceptByToken(inviteToken, data.user.id);
       } else {
-        // Check if user has a pending invite
         const { data: invData } = await supabase.rpc('check_my_admin_invite' as any);
         if (invData && Array.isArray(invData) && invData.length > 0) {
           setPendingInvite(invData[0] as any);
@@ -99,6 +96,43 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
         }
         onSuccess(data.user.id);
       }
+    }
+    setLoading(false);
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    setLoading(true);
+    const { data, error: signupError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: `${window.location.origin}/admin${inviteToken ? `?invite=${inviteToken}` : ''}`,
+      },
+    });
+    if (signupError) {
+      setError(signupError.message);
+      setLoading(false);
+      return;
+    }
+    if (data.session && data.user) {
+      // Auto-confirmed — accept invite immediately
+      setLoggedInUser({ id: data.user.id, email: data.user.email || '' });
+      if (inviteToken) {
+        await handleAcceptByToken(inviteToken, data.user.id);
+      }
+    } else {
+      toast.success('Check your email to verify your account, then come back to accept the invite.');
     }
     setLoading(false);
   };
@@ -148,26 +182,69 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
-      <form onSubmit={handleLogin} className="bg-surface rounded-2xl shadow-lg border border-border p-8 w-full max-w-sm space-y-4">
-        <h1 className="font-heading font-bold text-xl text-foreground text-center">Admin Login</h1>
+      <form
+        onSubmit={mode === 'login' ? handleLogin : handleSignup}
+        className="bg-surface rounded-2xl shadow-lg border border-border p-8 w-full max-w-sm space-y-4"
+      >
+        <h1 className="font-heading font-bold text-xl text-foreground text-center">
+          {mode === 'login' ? 'Admin Login' : 'Create Admin Account'}
+        </h1>
         {inviteToken && (
           <p className="font-body text-sm text-primary text-center bg-primary/10 rounded-lg px-3 py-2">
-            Please sign in to accept your admin invite
+            {mode === 'signup'
+              ? 'Create an account to accept your admin invite'
+              : 'Sign in to accept your admin invite'}
           </p>
         )}
         {error && <p className="text-destructive text-sm font-body text-center">{error}</p>}
+
+        {mode === 'signup' && (
+          <input
+            type="text"
+            placeholder="Full name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+            className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground"
+          />
+        )}
         <input
-          type="email" placeholder="Admin email" value={email}
+          type="email"
+          placeholder="Email"
+          value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
           className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground"
         />
-        <input
-          type="password" placeholder="Password" value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground"
+        <PasswordInput
+          value={password}
+          onChange={setPassword}
+          placeholder="Password"
         />
-        <button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground font-body font-semibold py-3 rounded-lg disabled:opacity-50">
-          {loading ? 'Signing in...' : 'Sign In'}
+        {mode === 'signup' && (
+          <PasswordInput
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            placeholder="Confirm password"
+          />
+        )}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-primary text-primary-foreground font-body font-semibold py-3 rounded-lg disabled:opacity-50"
+        >
+          {loading
+            ? (mode === 'login' ? 'Signing in...' : 'Creating account...')
+            : (mode === 'login' ? 'Sign In' : 'Create Account')}
+        </button>
+        <button
+          type="button"
+          onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }}
+          className="w-full font-body text-sm text-muted hover:text-foreground py-2"
+        >
+          {mode === 'login'
+            ? "Don't have an account? Sign up"
+            : 'Already have an account? Sign in'}
         </button>
       </form>
     </div>
