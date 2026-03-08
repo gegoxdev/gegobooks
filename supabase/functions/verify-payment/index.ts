@@ -96,7 +96,10 @@ Deno.serve(async (req) => {
     // Verify the email matches
     const paymentEmail = verifyData.data.customer?.email?.toLowerCase();
     if (paymentEmail && userEmail && paymentEmail !== userEmail.toLowerCase()) {
-      console.warn(`Email mismatch: payment=${paymentEmail}, user=${userEmail}`);
+      return new Response(
+        JSON.stringify({ error: 'Payment email does not match account email' }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Use service role to upgrade tier (bypasses RLS)
@@ -116,9 +119,6 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // Get current tier to prevent downgrades
     const { data: profile } = await adminSupabase
