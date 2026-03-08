@@ -427,6 +427,7 @@ export type Database = {
           invited_by_email: string
           role: string
           status: string
+          token: string
         }[]
       }
       list_viewer_links: {
