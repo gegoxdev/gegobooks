@@ -11,13 +11,19 @@ import ReferralLeaderboard from '@/components/admin/ReferralLeaderboard';
 import WaitlistProjection from '@/components/admin/WaitlistProjection';
 import SignupsTable from '@/components/admin/SignupsTable';
 import UserAccountStats from '@/components/admin/UserAccountStats';
+import AdminManagement from '@/components/admin/AdminManagement';
 import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
+
+type AdminRole = 'readonly' | 'admin' | 'master';
 
 const Admin = () => {
   useInactivityTimeout();
   const [authed, setAuthed] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
-  const [isReadOnly, setIsReadOnly] = useState(false);
+  const [adminRole, setAdminRole] = useState<AdminRole>('readonly');
+
+  const isReadOnly = adminRole === 'readonly';
+  const isMaster = adminRole === 'master';
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -33,7 +39,7 @@ const Admin = () => {
     const { data } = await supabase.from('admin_users').select('id, role').eq('user_id', userId).maybeSingle();
     if (data) {
       setAuthed(true);
-      setIsReadOnly((data as any).role === 'readonly');
+      setAdminRole(((data as any).role || 'readonly') as AdminRole);
     }
     setAuthLoading(false);
   };
@@ -63,6 +69,7 @@ const Admin = () => {
     <div className="min-h-screen bg-background">
       <AdminHeader onSignOut={handleSignOut} />
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        {isMaster && <AdminManagement />}
         <AfricaMap />
         <UserAccountStats isReadOnly={isReadOnly} />
         <MetricsBar />

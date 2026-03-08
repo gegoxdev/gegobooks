@@ -237,12 +237,30 @@ export type Database = {
       }
     }
     Functions: {
+      admin_add_admin: {
+        Args: { admin_role: string; target_email: string }
+        Returns: undefined
+      }
       admin_delete_user_account: {
         Args: { target_user_id: string }
         Returns: undefined
       }
       admin_delete_waitlist_signup: {
         Args: { signup_id: string }
+        Returns: undefined
+      }
+      admin_list_admins: {
+        Args: never
+        Returns: {
+          admin_id: string
+          created_at: string
+          email: string
+          role: string
+          user_id: string
+        }[]
+      }
+      admin_remove_admin: {
+        Args: { target_user_id: string }
         Returns: undefined
       }
       admin_set_user_tier: {
