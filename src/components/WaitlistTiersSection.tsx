@@ -38,11 +38,15 @@ const WaitlistTiersSection = () => {
   const navigate = useNavigate();
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
-  const handlePayClick = async (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handlePayClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      e.preventDefault();
-      setShowAuthPrompt(true);
+      navigate('/login?redirect=waitlist-tiers');
+    } else {
+      // User is authenticated, open payment link
+      const href = e.currentTarget.href;
+      window.open(href, '_blank', 'noopener,noreferrer');
     }
   };
 
