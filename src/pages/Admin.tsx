@@ -17,6 +17,7 @@ const Admin = () => {
   useInactivityTimeout();
   const [authed, setAuthed] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  const [isReadOnly, setIsReadOnly] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -29,9 +30,10 @@ const Admin = () => {
   }, []);
 
   const checkAdmin = async (userId: string) => {
-    const { data } = await supabase.from('admin_users').select('id').eq('user_id', userId).maybeSingle();
+    const { data } = await supabase.from('admin_users').select('id, role').eq('user_id', userId).maybeSingle();
     if (data) {
       setAuthed(true);
+      setIsReadOnly((data as any).role === 'readonly');
     }
     setAuthLoading(false);
   };
