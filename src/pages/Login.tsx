@@ -43,6 +43,7 @@ const Login = () => {
     setView(v);
     resetMessages();
     setPassword('');
+    setConfirmPassword('');
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
