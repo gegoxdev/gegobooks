@@ -19,6 +19,7 @@ interface AdminInvite {
   status: string;
   created_at: string;
   expires_at: string;
+  token: string;
 }
 
 const roleConfig: Record<string, { label: string; icon: typeof Shield; color: string; rank: number }> = {
@@ -46,7 +47,7 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('readonly');
   const [sending, setSending] = useState(false);
-  const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Direct add form (master only)
   const [directEmail, setDirectEmail] = useState('');
@@ -90,8 +91,8 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
       toast.error(inviteError.message);
     } else {
       const inviteLink = `${window.location.origin}/admin?invite=${token}`;
-      setCopiedLink(inviteLink);
-      toast.success('Invite link created! Share it with the recipient.');
+      await navigator.clipboard.writeText(inviteLink);
+      toast.success('Invite created & link copied to clipboard!');
       setInviteEmail('');
       setInviteRole('readonly');
       fetchInvites();
@@ -99,10 +100,12 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
     setSending(false);
   };
 
-  const handleCopyLink = async (link: string) => {
+  const handleCopyInviteLink = async (inv: AdminInvite) => {
+    const link = `${window.location.origin}/admin?invite=${inv.token}`;
     await navigator.clipboard.writeText(link);
-    toast.success('Invite link copied!');
-    setCopiedLink(null);
+    setCopiedId(inv.id);
+    toast.success(`Invite link for ${inv.email} copied!`);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleRevokeInvite = async (inviteId: string) => {
@@ -344,22 +347,6 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
             </button>
           </form>
 
-          {/* Copy link banner */}
-          {copiedLink && (
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mb-4 flex items-center gap-3">
-              <p className="font-body text-sm text-foreground flex-1 truncate">{copiedLink}</p>
-              <button
-                onClick={() => handleCopyLink(copiedLink)}
-                className="bg-primary text-primary-foreground font-body text-xs font-medium px-3 py-1.5 rounded-lg hover:opacity-90 inline-flex items-center gap-1 whitespace-nowrap"
-              >
-                <Copy className="w-3 h-3" />
-                Copy Link
-              </button>
-              <button onClick={() => setCopiedLink(null)} className="text-muted hover:text-foreground">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          )}
 
           {/* Invites list */}
           {invitesLoading ? (
@@ -404,15 +391,26 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
                           {new Date(inv.expires_at).toLocaleDateString()}
                         </td>
                         <td className="py-3 px-2">
-                          {inv.status === 'pending' && !isExpired && (
-                            <button
-                              onClick={() => handleRevokeInvite(inv.id)}
-                              className="text-muted hover:text-destructive transition-colors"
-                              title="Revoke invite"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {inv.status === 'pending' && !isExpired && (
+                              <>
+                                <button
+                                  onClick={() => handleCopyInviteLink(inv)}
+                                  className="text-primary hover:text-primary/80 transition-colors"
+                                  title="Copy invite link"
+                                >
+                                  {copiedId === inv.id ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
+                                </button>
+                                <button
+                                  onClick={() => handleRevokeInvite(inv.id)}
+                                  className="text-muted hover:text-destructive transition-colors"
+                                  title="Revoke invite"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -439,7 +437,7 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
           })}
         </div>
         <p className="font-body text-xs text-muted mt-2">
-          Master = full control • Admin = manage data • Approver = invite & view • Read Only = view only
+          Master = full control • Admin = manage data • Approver = invite &amp; view • Read Only = view only
         </p>
       </div>
     </div>
