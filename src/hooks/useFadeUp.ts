@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 
+const ANIM_CLASSES = '.fade-up, .fade-left, .fade-right, .scale-up, .blur-in';
+
 export const useFadeUp = () => {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -12,13 +14,13 @@ export const useFadeUp = () => {
           }
         });
       },
-      { threshold: 0.1 }
+      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
     );
 
     const el = ref.current;
     if (el) {
-      const fadeElements = el.querySelectorAll('.fade-up');
-      fadeElements.forEach((element) => observer.observe(element));
+      const elements = el.querySelectorAll(ANIM_CLASSES);
+      elements.forEach((element) => observer.observe(element));
     }
 
     return () => observer.disconnect();
