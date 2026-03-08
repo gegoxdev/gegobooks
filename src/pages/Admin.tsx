@@ -14,6 +14,7 @@ import UserAccountStats from '@/components/admin/UserAccountStats';
 import AdminManagement from '@/components/admin/AdminManagement';
 import ViewerLinkManager from '@/components/admin/ViewerLinkManager';
 import ViewerDashboard from '@/components/admin/ViewerDashboard';
+import InvestorMetrics from '@/components/admin/InvestorMetrics';
 import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 
 type AdminRole = 'readonly' | 'approver' | 'admin' | 'master';
