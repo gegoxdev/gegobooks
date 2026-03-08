@@ -35,6 +35,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          deleted_at: string | null
           email: string
           full_name: string | null
           id: string
@@ -43,6 +44,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           email: string
           full_name?: string | null
           id?: string
@@ -51,6 +53,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           email?: string
           full_name?: string | null
           id?: string
@@ -177,6 +180,15 @@ export type Database = {
       }
     }
     Functions: {
+      admin_delete_user_account: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
+      admin_delete_waitlist_signup: {
+        Args: { signup_id: string }
+        Returns: undefined
+      }
+      cancel_account_deletion: { Args: never; Returns: undefined }
       get_admin_user_stats: { Args: never; Returns: Json }
       get_my_signup: {
         Args: { p_email: string }
@@ -206,6 +218,7 @@ export type Database = {
         }[]
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      request_account_deletion: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
