@@ -1,4 +1,5 @@
 const PAYSTACK_PUBLIC_KEY = 'pk_live_b62d02c1d797b92aee1b25a6b6ac6d7bf7b4c146';
+const PENDING_PAYMENT_KEY = 'gegobooks_pending_payment';
 
 interface PaystackConfig {
   email: string;
@@ -29,19 +30,66 @@ declare global {
   }
 }
 
+function generateReference(): string {
+  return 'gego_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+}
+
+export interface PendingPayment {
+  reference: string;
+  tier: string;
+  timestamp: number;
+}
+
+export function savePendingPayment(reference: string, tier: string) {
+  const pending: PendingPayment = { reference, tier, timestamp: Date.now() };
+  localStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(pending));
+}
+
+export function getPendingPayment(): PendingPayment | null {
+  try {
+    const raw = localStorage.getItem(PENDING_PAYMENT_KEY);
+    if (!raw) return null;
+    const pending: PendingPayment = JSON.parse(raw);
+    // Expire after 30 minutes (Paystack default timeout)
+    if (Date.now() - pending.timestamp > 30 * 60 * 1000) {
+      clearPendingPayment();
+      return null;
+    }
+    return pending;
+  } catch {
+    clearPendingPayment();
+    return null;
+  }
+}
+
+export function clearPendingPayment() {
+  localStorage.removeItem(PENDING_PAYMENT_KEY);
+}
+
 export async function openPaystackPopup({ email, amount, onSuccess, onClose, metadata }: PaystackConfig) {
   await loadPaystackScript();
+
+  const reference = generateReference();
+  const tier = (metadata?.tier as string) || '';
+
+  // Save pending payment before opening popup
+  if (tier) savePendingPayment(reference, tier);
 
   const handler = window.PaystackPop.setup({
     key: PAYSTACK_PUBLIC_KEY,
     email,
     amount,
     currency: 'NGN',
+    ref: reference,
     metadata: metadata || {},
     callback: (response: { reference: string }) => {
+      clearPendingPayment();
       onSuccess(response.reference);
     },
-    onClose,
+    onClose: () => {
+      // Don't clear pending payment on close — user may have paid but closed early
+      onClose();
+    },
   });
 
   handler.openIframe();
