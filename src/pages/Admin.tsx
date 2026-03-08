@@ -12,6 +12,8 @@ import WaitlistProjection from '@/components/admin/WaitlistProjection';
 import SignupsTable from '@/components/admin/SignupsTable';
 import UserAccountStats from '@/components/admin/UserAccountStats';
 import AdminManagement from '@/components/admin/AdminManagement';
+import ViewerLinkManager from '@/components/admin/ViewerLinkManager';
+import ViewerDashboard from '@/components/admin/ViewerDashboard';
 import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 
 type AdminRole = 'readonly' | 'approver' | 'admin' | 'master';
@@ -22,10 +24,14 @@ const Admin = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [adminRole, setAdminRole] = useState<AdminRole>('readonly');
 
-  const isReadOnly = adminRole === 'readonly';
-  const isMaster = adminRole === 'master';
+  const urlParams = new URLSearchParams(window.location.search);
+  const viewerToken = urlParams.get('viewer');
 
   useEffect(() => {
+    if (viewerToken) {
+      setAuthLoading(false);
+      return;
+    }
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         checkAdmin(session.user.id);
@@ -33,7 +39,7 @@ const Admin = () => {
         setAuthLoading(false);
       }
     });
-  }, []);
+  }, [viewerToken]);
 
   const checkAdmin = async (userId: string) => {
     const { data } = await supabase.from('admin_users').select('id, role').eq('user_id', userId).maybeSingle();
@@ -53,6 +59,11 @@ const Admin = () => {
     setAuthed(false);
   };
 
+  // Viewer mode — no auth required
+  if (viewerToken) {
+    return <ViewerDashboard token={viewerToken} />;
+  }
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -65,11 +76,15 @@ const Admin = () => {
     return <AdminLogin onSuccess={handleLoginSuccess} />;
   }
 
+  const isReadOnly = adminRole === 'readonly';
+  const isMaster = adminRole === 'master';
+
   return (
     <div className="min-h-screen bg-background">
       <AdminHeader onSignOut={handleSignOut} />
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {(isMaster || adminRole === 'approver') && <AdminManagement currentRole={adminRole} />}
+        {isMaster && <ViewerLinkManager />}
         <AfricaMap />
         <UserAccountStats isReadOnly={isReadOnly} />
         <MetricsBar />

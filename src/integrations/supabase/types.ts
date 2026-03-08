@@ -146,6 +146,42 @@ export type Database = {
         }
         Relationships: []
       }
+      viewer_links: {
+        Row: {
+          access_count: number
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          label: string
+          last_accessed_at: string | null
+          token: string
+        }
+        Insert: {
+          access_count?: number
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          last_accessed_at?: string | null
+          token?: string
+        }
+        Update: {
+          access_count?: number
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          last_accessed_at?: string | null
+          token?: string
+        }
+        Relationships: []
+      }
       waitlist_signups: {
         Row: {
           created_at: string
@@ -321,6 +357,11 @@ export type Database = {
         Args: { invite_role: string; target_email: string }
         Returns: string
       }
+      create_viewer_link: {
+        Args: { link_expires_at?: string; link_label: string }
+        Returns: string
+      }
+      delete_viewer_link: { Args: { link_id: string }; Returns: undefined }
       get_admin_role: { Args: { _user_id: string }; Returns: string }
       get_admin_signups_with_tiers: {
         Args: never
@@ -388,8 +429,23 @@ export type Database = {
           status: string
         }[]
       }
+      list_viewer_links: {
+        Args: never
+        Returns: {
+          access_count: number
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          label: string
+          last_accessed_at: string
+          token: string
+        }[]
+      }
+      reactivate_viewer_link: { Args: { link_id: string }; Returns: undefined }
       request_account_deletion: { Args: never; Returns: undefined }
       revoke_admin_invite: { Args: { invite_id: string }; Returns: undefined }
+      revoke_viewer_link: { Args: { link_id: string }; Returns: undefined }
       upgrade_tier: { Args: { new_tier: string }; Returns: undefined }
     }
     Enums: {
