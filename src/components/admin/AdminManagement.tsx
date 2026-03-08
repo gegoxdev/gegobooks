@@ -91,8 +91,8 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
       toast.error(inviteError.message);
     } else {
       const inviteLink = `${window.location.origin}/admin?invite=${token}`;
-      setCopiedLink(inviteLink);
-      toast.success('Invite link created! Share it with the recipient.');
+      await navigator.clipboard.writeText(inviteLink);
+      toast.success('Invite created & link copied to clipboard!');
       setInviteEmail('');
       setInviteRole('readonly');
       fetchInvites();
