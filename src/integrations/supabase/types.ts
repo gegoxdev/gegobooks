@@ -86,6 +86,27 @@ export type Database = {
         }
         Relationships: []
       }
+      used_payment_references: {
+        Row: {
+          reference: string
+          tier: string
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          reference: string
+          tier: string
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          reference?: string
+          tier?: string
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       waitlist_signups: {
         Row: {
           created_at: string
