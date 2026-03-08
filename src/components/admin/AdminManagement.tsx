@@ -391,31 +391,27 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
                           {new Date(inv.expires_at).toLocaleDateString()}
                         </td>
                         <td className="py-3 px-2">
-                          {inv.status === 'pending' && !isExpired && (
-                            <button
-                              onClick={() => handleRevokeInvite(inv.id)}
-                              className="text-muted hover:text-destructive transition-colors"
-                              title="Revoke invite"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {inv.status === 'pending' && !isExpired && (
+                              <>
+                                <button
+                                  onClick={() => handleCopyInviteLink(inv)}
+                                  className="text-primary hover:text-primary/80 transition-colors"
+                                  title="Copy invite link"
+                                >
+                                  {copiedId === inv.id ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                                </button>
+                                <button
+                                  onClick={() => handleRevokeInvite(inv.id)}
+                                  className="text-muted hover:text-destructive transition-colors"
+                                  title="Revoke invite"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Role legend */}
-      <div className="mt-4 pt-4 border-t border-border">
-        <p className="font-body text-xs text-muted mb-2">Role Hierarchy:</p>
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(roleConfig).map(([key, rc]) => {
             const RoleIcon = rc.icon;
             return (
               <span key={key} className={`font-body text-xs px-2 py-1 rounded-full inline-flex items-center gap-1 ${rc.color}`}>
