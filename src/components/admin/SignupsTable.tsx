@@ -31,7 +31,7 @@ const tierLabels: Record<string, string> = {
   founder: 'Founder',
 };
 
-const TierDropdown = ({ signup, onUpdate }: { signup: Signup; onUpdate: () => void }) => {
+const TierDropdown = ({ signup, onUpdate, disabled }: { signup: Signup; onUpdate: () => void; disabled?: boolean }) => {
   const [open, setOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
 
