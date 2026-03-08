@@ -72,7 +72,7 @@ const Login = () => {
     if (password !== confirmPassword) { setError('Passwords do not match'); return; }
 
     setLoading(true);
-    const { error: err } = await supabase.auth.signUp({
+    const { data, error: err } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
       options: {
@@ -83,11 +83,24 @@ const Login = () => {
 
     if (err) {
       setError(err.message);
-    } else {
-      // Redirect to OTP verification page
-      const redirectPath = redirect ? `/login?redirect=${redirect}` : '/dashboard';
-      navigate(`/verify?email=${encodeURIComponent(email.trim().toLowerCase())}&redirect=${encodeURIComponent(redirectPath)}`);
+      setLoading(false);
+      return;
     }
+
+    const alreadyExistingAccount = Boolean(data.user?.email_confirmed_at) || (data.user?.identities?.length ?? 0) === 0;
+
+    if (alreadyExistingAccount) {
+      setLoading(false);
+      setView('sign_in');
+      setPassword('');
+      setConfirmPassword('');
+      setSuccess('This email is already registered. Please sign in instead.');
+      return;
+    }
+
+    // Redirect to OTP verification page for new signups
+    const redirectPath = redirect ? `/login?redirect=${redirect}` : '/dashboard';
+    navigate(`/verify?email=${encodeURIComponent(email.trim().toLowerCase())}&redirect=${encodeURIComponent(redirectPath)}`);
     setLoading(false);
   };
 
