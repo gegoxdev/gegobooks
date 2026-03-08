@@ -411,6 +411,7 @@ const AdminManagement = ({ currentRole }: { currentRole: string }) => {
                               </>
                             )}
                           </div>
+                        </td>
                       </tr>
                     );
                   })}
