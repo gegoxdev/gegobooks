@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: string
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role?: string
+          status?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: string
+          status?: string
+          token?: string
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string
@@ -237,6 +273,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_admin_invite: {
+        Args: { invite_token: string }
+        Returns: undefined
+      }
       admin_add_admin: {
         Args: { admin_role: string; target_email: string }
         Returns: undefined
@@ -268,6 +308,19 @@ export type Database = {
         Returns: undefined
       }
       cancel_account_deletion: { Args: never; Returns: undefined }
+      check_my_admin_invite: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          invited_by_email: string
+          role: string
+        }[]
+      }
+      create_admin_invite: {
+        Args: { invite_role: string; target_email: string }
+        Returns: string
+      }
       get_admin_role: { Args: { _user_id: string }; Returns: string }
       get_admin_signups_with_tiers: {
         Args: never
@@ -323,7 +376,20 @@ export type Database = {
         }[]
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      list_admin_invites: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by_email: string
+          role: string
+          status: string
+        }[]
+      }
       request_account_deletion: { Args: never; Returns: undefined }
+      revoke_admin_invite: { Args: { invite_id: string }; Returns: undefined }
       upgrade_tier: { Args: { new_tier: string }; Returns: undefined }
     }
     Enums: {
