@@ -229,7 +229,6 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
             onChange={setConfirmPassword}
             placeholder="Confirm password"
           />
-          />
         )}
         <button
           type="submit"
