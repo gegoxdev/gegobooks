@@ -9,6 +9,8 @@ interface AdminUser {
   email: string;
   role: string;
   created_at: string;
+  full_name: string;
+  tier: string;
 }
 
 interface AdminInvite {
