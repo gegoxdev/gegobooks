@@ -24,19 +24,14 @@ const Admin = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [adminRole, setAdminRole] = useState<AdminRole>('readonly');
 
-  // Check for viewer token in URL
   const urlParams = new URLSearchParams(window.location.search);
   const viewerToken = urlParams.get('viewer');
 
-  // If viewer token present, render viewer dashboard (no auth needed)
-  if (viewerToken) {
-    return <ViewerDashboard token={viewerToken} />;
-  }
-
-  const isReadOnly = adminRole === 'readonly';
-  const isMaster = adminRole === 'master';
-
   useEffect(() => {
+    if (viewerToken) {
+      setAuthLoading(false);
+      return;
+    }
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         checkAdmin(session.user.id);
@@ -44,7 +39,7 @@ const Admin = () => {
         setAuthLoading(false);
       }
     });
-  }, []);
+  }, [viewerToken]);
 
   const checkAdmin = async (userId: string) => {
     const { data } = await supabase.from('admin_users').select('id, role').eq('user_id', userId).maybeSingle();
@@ -64,6 +59,11 @@ const Admin = () => {
     setAuthed(false);
   };
 
+  // Viewer mode — no auth required
+  if (viewerToken) {
+    return <ViewerDashboard token={viewerToken} />;
+  }
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -75,6 +75,9 @@ const Admin = () => {
   if (!authed) {
     return <AdminLogin onSuccess={handleLoginSuccess} />;
   }
+
+  const isReadOnly = adminRole === 'readonly';
+  const isMaster = adminRole === 'master';
 
   return (
     <div className="min-h-screen bg-background">
