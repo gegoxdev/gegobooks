@@ -25,7 +25,7 @@ interface Profile {
   deleted_at: string | null;
 }
 
-const UserAccountStats = () => {
+const UserAccountStats = ({ isReadOnly = false }: { isReadOnly?: boolean }) => {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAccounts, setShowAccounts] = useState(false);
