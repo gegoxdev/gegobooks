@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/gegobooks-logo.jpg';
+import PasswordInput from '@/components/PasswordInput';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -19,7 +20,6 @@ const ResetPassword = () => {
       }
     });
 
-    // Check hash for recovery token
     const hash = window.location.hash;
     if (hash.includes('type=recovery')) {
       setIsRecovery(true);
@@ -95,29 +95,8 @@ const ResetPassword = () => {
             </div>
           )}
 
-          <div>
-            <label className="font-body text-sm font-medium text-foreground mb-1.5 block">New password</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
-            />
-          </div>
-
-          <div>
-            <label className="font-body text-sm font-medium text-foreground mb-1.5 block">Confirm password</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
-            />
-          </div>
+          <PasswordInput label="New password" value={password} onChange={setPassword} required />
+          <PasswordInput label="Confirm password" value={confirmPassword} onChange={setConfirmPassword} required />
 
           <button
             type="submit"

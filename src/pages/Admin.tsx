@@ -60,6 +60,7 @@ const Admin = () => {
       <AdminHeader onSignOut={handleSignOut} />
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <AfricaMap />
+        <UserAccountStats />
         <MetricsBar />
         <GrowthComparisons />
         <SignupGrowthChart />
