@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Shield, Check, Lock, Mail } from 'lucide-react';
-import PasswordInput from '@/components/PasswordInput';
 
 interface AdminLoginProps {
   onSuccess: (userId: string) => void;
@@ -10,15 +9,11 @@ interface AdminLoginProps {
 
 const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ id: string; email: string } | null>(null);
   const [pendingInvite, setPendingInvite] = useState<{ id: string; role: string; invited_by_email: string } | null>(null);
   const [accepting, setAccepting] = useState(false);
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
 
   // Invite token handling
   const urlParams = new URLSearchParams(window.location.search);
@@ -26,9 +21,8 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
   const [inviteEmail, setInviteEmail] = useState<string | null>(null);
   const [inviteLoading, setInviteLoading] = useState(!!inviteToken);
 
-  // OTP verification state
+  // OTP state
   const [otpMode, setOtpMode] = useState(false);
-  const [otpType, setOtpType] = useState<'signup' | 'email'>('signup'); // 'signup' for new users, 'email' for existing users
   const [otp, setOtp] = useState('');
   const [resending, setResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState('');
@@ -36,7 +30,6 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
   // Fetch invite email from token on mount
   useEffect(() => {
     if (inviteToken) {
-      setMode('signup');
       supabase.rpc('get_invite_email' as any, { invite_token: inviteToken }).then(({ data }) => {
         if (data) {
           setInviteEmail(data as string);
@@ -96,93 +89,35 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
     }
   };
 
-  // Send a login OTP for existing users accepting admin invites
-  const sendAdminLoginOtp = async (targetEmail: string) => {
+  // Send admin OTP (always uses signInWithOtp - works for both new and existing users)
+  const sendAdminOtp = async (targetEmail: string) => {
     setLoading(true);
     setError('');
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email: targetEmail,
-      options: { shouldCreateUser: false },
+      options: { shouldCreateUser: true },
     });
     if (otpError) {
       setError(otpError.message);
       setLoading(false);
       return false;
     }
-    setOtpType('email');
     setOtpMode(true);
     toast.success('Admin verification code sent to your email.');
     setLoading(false);
     return true;
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
+    if (!email.trim()) return;
+    // If invite token, email must match
+    if (inviteEmail && email.toLowerCase() !== inviteEmail.toLowerCase()) {
+      setError('This invite is for a different email address.');
       return;
     }
-    if (data.user) {
-      setLoggedInUser({ id: data.user.id, email: data.user.email || '' });
-      if (inviteToken) {
-        await handleAcceptByToken(inviteToken, data.user.id);
-      } else {
-        const { data: invData } = await supabase.rpc('check_my_admin_invite' as any);
-        if (invData && Array.isArray(invData) && invData.length > 0) {
-          setPendingInvite(invData[0] as any);
-          setLoading(false);
-          return;
-        }
-        onSuccess(data.user.id);
-      }
-    }
-    setLoading(false);
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-    setLoading(true);
-    const { data, error: signupError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-      },
-    });
-    if (signupError) {
-      setError(signupError.message);
-      setLoading(false);
-      return;
-    }
-    if (data.session && data.user) {
-      // Auto-confirmed — accept invite immediately
-      setLoggedInUser({ id: data.user.id, email: data.user.email || '' });
-      if (inviteToken) {
-        await handleAcceptByToken(inviteToken, data.user.id);
-      }
-    } else if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
-      // Existing user — send admin login OTP instead
-      await sendAdminLoginOtp(email);
-    } else {
-      // New user — email verification required via signup OTP
-      setOtpType('signup');
-      setOtpMode(true);
-      toast.success('A 6-digit verification code has been sent to your email.');
-    }
-    setLoading(false);
+    await sendAdminOtp(email);
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
@@ -194,7 +129,7 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
     const { data, error: err } = await supabase.auth.verifyOtp({
       email,
       token: otp,
-      type: otpType, // 'signup' for new users, 'email' for existing users
+      type: 'email',
     });
 
     if (err) {
@@ -214,25 +149,16 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
     setResending(true);
     setError('');
     setResendSuccess('');
-
-    if (otpType === 'email') {
-      // Resend admin login OTP
-      const { error: err } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
-      });
-      if (err) setError(err.message);
-      else setResendSuccess('New admin verification code sent! Check your email.');
-    } else {
-      // Resend signup OTP
-      const { error: err } = await supabase.auth.resend({ type: 'signup', email });
-      if (err) setError(err.message);
-      else setResendSuccess('New verification code sent! Check your email.');
-    }
+    const { error: err } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true },
+    });
+    if (err) setError(err.message);
+    else setResendSuccess('New admin verification code sent! Check your email.');
     setResending(false);
   };
 
-  const isEmailLocked = !!inviteEmail && mode === 'signup';
+  const isEmailLocked = !!inviteEmail;
 
   // Loading invite info
   if (inviteLoading) {
@@ -286,29 +212,23 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
     );
   }
 
-  // OTP verification screen (inline, admin-specific)
+  // OTP verification screen
   if (otpMode) {
-    const isExistingUser = otpType === 'email';
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Shield className="w-12 h-12 text-primary mx-auto mb-4" />
             <h1 className="font-heading font-bold text-2xl text-foreground">
-              {isExistingUser ? 'Admin Identity Verification' : 'Verify your admin email'}
+              Admin Identity Verification
             </h1>
             <p className="font-body text-sm text-muted mt-1">
-              {isExistingUser
-                ? <>We sent an <strong>admin verification code</strong> to <span className="font-medium text-foreground">{email}</span></>
-                : <>We sent a 6-digit code to <span className="font-medium text-foreground">{email}</span></>
-              }
+              We sent an <strong>admin verification code</strong> to <span className="font-medium text-foreground">{email}</span>
             </p>
-            {isExistingUser && (
-              <p className="font-body text-xs text-muted mt-2 bg-muted/10 rounded-lg px-3 py-2 inline-block">
-                <Mail className="w-3 h-3 inline mr-1" />
-                This is separate from any waitlist verification codes
-              </p>
-            )}
+            <p className="font-body text-xs text-muted mt-2 bg-muted/10 rounded-lg px-3 py-2 inline-block">
+              <Mail className="w-3 h-3 inline mr-1" />
+              This is separate from any waitlist verification codes
+            </p>
           </div>
 
           <form onSubmit={handleVerifyOtp} className="bg-surface rounded-2xl shadow-lg border border-border p-8 space-y-4">
@@ -325,7 +245,7 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
 
             <div>
               <label className="font-body text-sm font-medium text-foreground mb-1.5 block">
-                {isExistingUser ? 'Admin verification code' : 'Verification code'}
+                Admin verification code
               </label>
               <input
                 type="text"
@@ -344,7 +264,7 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
               disabled={loading}
               className="w-full bg-primary text-primary-foreground font-body font-semibold py-3 rounded-lg disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
-              {loading ? 'Verifying...' : 'Verify & Accept Invite'}
+              {loading ? 'Verifying...' : (inviteToken ? 'Verify & Accept Invite' : 'Verify & Sign In')}
             </button>
 
             <div className="text-center">
@@ -358,25 +278,42 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
               </button>
             </div>
           </form>
+
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => { setOtpMode(false); setOtp(''); setError(''); setResendSuccess(''); }}
+              className="font-body text-sm text-muted hover:text-foreground transition-colors"
+            >
+              ← Back
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
+  // Email entry screen (OTP-based, no password)
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <form
-        onSubmit={mode === 'login' ? handleLogin : handleSignup}
+        onSubmit={handleSendOtp}
         className="bg-surface rounded-2xl shadow-lg border border-border p-8 w-full max-w-sm space-y-4"
       >
-        <h1 className="font-heading font-bold text-xl text-foreground text-center">
-          {mode === 'login' ? 'Admin Login' : 'Create Admin Account'}
-        </h1>
+        <div className="text-center">
+          <Shield className="w-10 h-10 text-primary mx-auto mb-3" />
+          <h1 className="font-heading font-bold text-xl text-foreground">
+            {inviteToken ? 'Accept Admin Invite' : 'Admin Login'}
+          </h1>
+          <p className="font-body text-sm text-muted mt-1">
+            {inviteToken
+              ? 'Verify your email to accept the admin invite'
+              : "We'll send a verification code to your email"}
+          </p>
+        </div>
+
         {inviteToken && inviteEmail && (
           <p className="font-body text-sm text-primary text-center bg-primary/10 rounded-lg px-3 py-2">
-            {mode === 'signup'
-              ? `Create an account for ${inviteEmail} to accept your admin invite`
-              : 'Sign in to accept your admin invite'}
+            Invite for {inviteEmail}
           </p>
         )}
         {inviteToken && !inviteEmail && (
@@ -386,20 +323,10 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
         )}
         {error && <p className="text-destructive text-sm font-body text-center">{error}</p>}
 
-        {mode === 'signup' && (
-          <input
-            type="text"
-            placeholder="Full name"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            required
-            className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground"
-          />
-        )}
         <div className="relative">
           <input
             type="email"
-            placeholder="Email"
+            placeholder="Enter your email"
             value={email}
             onChange={(e) => !isEmailLocked && setEmail(e.target.value)}
             readOnly={isEmailLocked}
@@ -412,51 +339,14 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
             <Lock className="w-4 h-4 text-muted absolute right-3 top-1/2 -translate-y-1/2" />
           )}
         </div>
-        <PasswordInput
-          label="Password"
-          value={password}
-          onChange={setPassword}
-          placeholder="Password"
-        />
-        {mode === 'signup' && (
-          <PasswordInput
-            label="Confirm password"
-            value={confirmPassword}
-            onChange={setConfirmPassword}
-            placeholder="Confirm password"
-          />
-        )}
+
         <button
           type="submit"
           disabled={loading || (!!inviteToken && !inviteEmail)}
-          className="w-full bg-primary text-primary-foreground font-body font-semibold py-3 rounded-lg disabled:opacity-50"
+          className="w-full bg-primary text-primary-foreground font-body font-semibold py-3 rounded-lg disabled:opacity-50 hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-2"
         >
-          {loading
-            ? (mode === 'login' ? 'Signing in...' : 'Creating account...')
-            : (mode === 'login' ? 'Sign In' : 'Create Account')}
-        </button>
-
-        {/* For invite links, offer OTP verification for existing users */}
-        {inviteToken && inviteEmail && mode === 'login' && (
-          <button
-            type="button"
-            onClick={() => sendAdminLoginOtp(email)}
-            disabled={loading}
-            className="w-full font-body text-sm text-primary hover:underline py-2 inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
-          >
-            <Mail className="w-3.5 h-3.5" />
-            Verify with email code instead
-          </button>
-        )}
-
-        <button
-          type="button"
-          onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }}
-          className="w-full font-body text-sm text-muted hover:text-foreground py-2"
-        >
-          {mode === 'login'
-            ? "Don't have an account? Sign up"
-            : 'Already have an account? Sign in'}
+          <Mail className="w-4 h-4" />
+          {loading ? 'Sending code...' : 'Send Verification Code'}
         </button>
       </form>
     </div>
