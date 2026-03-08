@@ -208,10 +208,13 @@ const Login = () => {
             </div>
 
             {view !== 'forgot_password' && (
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="font-body text-sm font-medium text-foreground">Password</label>
-                  {view === 'sign_in' && (
+              <>
+                <PasswordInput
+                  label="Password"
+                  value={password}
+                  onChange={setPassword}
+                  required
+                  rightLabel={view === 'sign_in' ? (
                     <button
                       type="button"
                       onClick={() => switchView('forgot_password')}
@@ -219,17 +222,17 @@ const Login = () => {
                     >
                       Forgot password?
                     </button>
-                  )}
-                </div>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+                  ) : undefined}
                 />
-              </div>
+                {view === 'sign_up' && (
+                  <PasswordInput
+                    label="Confirm password"
+                    value={confirmPassword}
+                    onChange={setConfirmPassword}
+                    required
+                  />
+                )}
+              </>
             )}
 
             <button
