@@ -57,6 +57,35 @@ const Dashboard = () => {
     };
     fetchData();
 
+    // Check for pending payment from interrupted session
+    const checkPendingPayment = async () => {
+      const pending = getPendingPayment();
+      if (!pending) return;
+      toast.loading('Checking for pending payment...');
+      try {
+        const { data: verifyResult, error } = await supabase.functions.invoke('verify-payment', {
+          body: { reference: pending.reference, tier: pending.tier },
+        });
+        toast.dismiss();
+        if (!error && verifyResult?.success) {
+          toast.success(`🎉 Payment confirmed! Upgraded to ${pending.tier === 'founder' ? 'Founder Circle' : 'Priority Access'}!`);
+          clearPendingPayment();
+          setProfile((p: any) => ({ ...p, tier: pending.tier }));
+          const { data: wlData } = await supabase.rpc('get_my_waitlist_status');
+          if (wlData && Array.isArray(wlData) && wlData.length > 0) {
+            setWaitlistData(wlData[0]);
+          }
+        } else {
+          // Payment not completed or already processed — silently clear
+          clearPendingPayment();
+        }
+      } catch {
+        toast.dismiss();
+        clearPendingPayment();
+      }
+    };
+    checkPendingPayment();
+
     // Subscribe to realtime profile changes (e.g. admin tier updates)
     const channel = supabase
       .channel('profile-changes')
