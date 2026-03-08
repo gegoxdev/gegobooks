@@ -217,15 +217,18 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
           className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground"
         />
         <PasswordInput
+          label="Password"
           value={password}
           onChange={setPassword}
           placeholder="Password"
         />
         {mode === 'signup' && (
           <PasswordInput
+            label="Confirm password"
             value={confirmPassword}
             onChange={setConfirmPassword}
             placeholder="Confirm password"
+          />
           />
         )}
         <button
