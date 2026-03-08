@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import ReferralDashboard from './ReferralDashboard';
+import { CheckCircle } from 'lucide-react';
 
 const userTypes = [
   { value: 'user', label: 'Business Owner' },
@@ -12,9 +13,20 @@ interface SignupModalProps {
   isOpen: boolean;
   onClose: () => void;
   utmParams: { utm_source: string; utm_medium: string; utm_campaign: string; ref: string };
+  waitlistStatus?: {
+    isLoggedIn: boolean;
+    isOnWaitlist: boolean;
+    isReady: boolean;
+    waitlistData: {
+      full_name: string;
+      waitlist_position: number;
+      referrals_count: number;
+      referral_code: string;
+    } | null;
+  };
 }
 
-const SignupModal = ({ isOpen, onClose, utmParams }: SignupModalProps) => {
+const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModalProps) => {
   const [form, setForm] = useState({ fullName: '', email: '', userType: 'user' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -25,6 +37,9 @@ const SignupModal = ({ isOpen, onClose, utmParams }: SignupModalProps) => {
   } | null>(null);
 
   if (!isOpen) return null;
+
+  // If user is signed in and already on the waitlist, show status instead of form
+  const alreadyJoined = waitlistStatus?.isReady && waitlistStatus?.isLoggedIn && waitlistStatus?.isOnWaitlist && waitlistStatus?.waitlistData;
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -66,7 +81,6 @@ const SignupModal = ({ isOpen, onClose, utmParams }: SignupModalProps) => {
         return;
       }
 
-      // Fetch signup data via secure RPC
       const { data } = await supabase.rpc('get_my_signup', { p_email: emailNormalized });
       if (data && Array.isArray(data) && data.length > 0) {
         const row = data[0] as any;
@@ -99,7 +113,62 @@ const SignupModal = ({ isOpen, onClose, utmParams }: SignupModalProps) => {
       >
         <button onClick={handleClose} className="absolute top-4 right-4 text-muted hover:text-foreground text-2xl">×</button>
 
-        {signupData ? (
+        {alreadyJoined ? (
+          <div className="text-center py-4">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="font-heading font-bold text-xl text-foreground mb-2">
+              You're already on the waitlist!
+            </h3>
+            <p className="font-body text-muted text-sm mb-6">
+              Hey {waitlistStatus.waitlistData!.full_name.split(' ')[0]}, you've already secured your spot.
+            </p>
+
+            <div className="bg-soft-white rounded-xl p-5 mb-6 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="font-body text-sm text-muted">Your position</span>
+                <span className="font-heading font-bold text-2xl text-primary">
+                  #{waitlistStatus.waitlistData!.waitlist_position}
+                </span>
+              </div>
+              <div className="border-t border-border" />
+              <div className="flex justify-between items-center">
+                <span className="font-body text-sm text-muted">Referrals</span>
+                <span className="font-heading font-bold text-lg text-foreground">
+                  {waitlistStatus.waitlistData!.referrals_count}
+                </span>
+              </div>
+            </div>
+
+            <p className="font-body text-xs text-muted mb-4">
+              Want to move up? Share your referral code with friends!
+            </p>
+
+            <div className="bg-soft-white rounded-lg px-4 py-3 flex items-center justify-between gap-2 mb-4">
+              <code className="font-body text-sm text-foreground font-medium">
+                {waitlistStatus.waitlistData!.referral_code}
+              </code>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    `${window.location.origin}?ref=${waitlistStatus.waitlistData!.referral_code}`
+                  );
+                }}
+                className="font-body text-xs text-primary font-semibold hover:underline"
+              >
+                Copy link
+              </button>
+            </div>
+
+            <button
+              onClick={handleClose}
+              className="w-full bg-primary text-primary-foreground font-body font-semibold py-3 rounded-lg hover:opacity-90 transition-opacity"
+            >
+              Got it!
+            </button>
+          </div>
+        ) : signupData ? (
           <ReferralDashboard
             referralCode={signupData.referral_code}
             waitlistPosition={signupData.waitlist_position}
