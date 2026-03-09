@@ -40,6 +40,7 @@ const Index = () => {
       <WhyNowSection />
       <WaitlistTiersSection onOpenModal={() => setModalOpen(true)} />
       <MissionSection />
+      <ChallengePromoSection />
       <FAQSection />
       <FinalCTASection onOpenModal={() => setModalOpen(true)} />
       <FooterSection />

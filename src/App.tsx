@@ -32,6 +32,7 @@ const AppRoutes = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/verify" element={<VerifyOTP />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/challenge" element={<Challenge />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
