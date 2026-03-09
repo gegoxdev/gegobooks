@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { AlertTriangle } from 'lucide-react';
 import { openPaystackPopup, TIER_PRICES, getPendingPayment, clearPendingPayment } from '@/lib/paystack';
 import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
+import ChallengeDashboard from '@/components/challenge/ChallengeDashboard';
 
 const tierLabels: Record<string, string> = {
   free: 'Free Waitlist',
@@ -286,6 +287,11 @@ const Dashboard = () => {
               onClose={() => {}}
             />
           </div>
+        )}
+
+        {/* Creator Challenge */}
+        {user && (
+          <ChallengeDashboard user={user} waitlistData={waitlistData} />
         )}
 
         {/* Account Deletion */}

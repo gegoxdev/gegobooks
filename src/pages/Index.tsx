@@ -8,6 +8,7 @@ import WhyNowSection from '@/components/WhyNowSection';
 import WaitlistTiersSection from '@/components/WaitlistTiersSection';
 import MissionSection from '@/components/MissionSection';
 import FAQSection from '@/components/FAQSection';
+import ChallengePromoSection from '@/components/ChallengePromoSection';
 import FinalCTASection from '@/components/FinalCTASection';
 import FooterSection from '@/components/FooterSection';
 import SignupModal from '@/components/SignupModal';
@@ -39,6 +40,7 @@ const Index = () => {
       <WhyNowSection />
       <WaitlistTiersSection onOpenModal={() => setModalOpen(true)} />
       <MissionSection />
+      <ChallengePromoSection />
       <FAQSection />
       <FinalCTASection onOpenModal={() => setModalOpen(true)} />
       <FooterSection />

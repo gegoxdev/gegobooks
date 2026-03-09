@@ -71,6 +71,137 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_global: boolean
+          message: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_global?: boolean
+          message: string
+          read?: boolean
+          title: string
+          type?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_global?: boolean
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      challenge_submissions: {
+        Row: {
+          caption: string | null
+          challenge_week_id: string
+          content_url: string
+          created_at: string
+          id: string
+          is_monthly_winner: boolean
+          is_weekly_winner: boolean
+          platform: string
+          status: string
+          updated_at: string
+          user_email: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          caption?: string | null
+          challenge_week_id: string
+          content_url: string
+          created_at?: string
+          id?: string
+          is_monthly_winner?: boolean
+          is_weekly_winner?: boolean
+          platform?: string
+          status?: string
+          updated_at?: string
+          user_email: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          caption?: string | null
+          challenge_week_id?: string
+          content_url?: string
+          created_at?: string
+          id?: string
+          is_monthly_winner?: boolean
+          is_weekly_winner?: boolean
+          platform?: string
+          status?: string
+          updated_at?: string
+          user_email?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_submissions_challenge_week_id_fkey"
+            columns: ["challenge_week_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_weeks: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          end_date: string
+          id: string
+          prize_amount: number
+          start_date: string
+          status: string
+          theme: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          end_date: string
+          id?: string
+          prize_amount?: number
+          start_date: string
+          status?: string
+          theme: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          prize_amount?: number
+          start_date?: string
+          status?: string
+          theme?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       page_views: {
         Row: {
           browser: string | null
@@ -322,6 +453,17 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_leaderboard: {
+        Row: {
+          approved_submissions: number | null
+          monthly_wins: number | null
+          total_submissions: number | null
+          user_email: string | null
+          user_name: string | null
+          weekly_wins: number | null
+        }
+        Relationships: []
+      }
       churn_rate: {
         Row: {
           churn_pct: number | null
@@ -527,6 +669,14 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: undefined
       }
+      admin_select_monthly_winner: {
+        Args: { submission_id: string }
+        Returns: undefined
+      }
+      admin_select_weekly_winner: {
+        Args: { submission_id: string }
+        Returns: undefined
+      }
       admin_set_user_tier: {
         Args: { new_tier: string; target_email: string }
         Returns: undefined
@@ -550,6 +700,19 @@ export type Database = {
         Returns: string
       }
       delete_viewer_link: { Args: { link_id: string }; Returns: undefined }
+      get_active_challenge: {
+        Args: never
+        Returns: {
+          description: string
+          end_date: string
+          id: string
+          prize_amount: number
+          start_date: string
+          status: string
+          theme: string
+          title: string
+        }[]
+      }
       get_admin_role: { Args: { _user_id: string }; Returns: string }
       get_admin_signups_with_tiers: {
         Args: never

@@ -13,6 +13,7 @@ const Login = lazy(() => import("./pages/Login"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const VerifyOTP = lazy(() => import("./pages/VerifyOTP"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Challenge = lazy(() => import("./pages/Challenge"));
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const AppRoutes = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/verify" element={<VerifyOTP />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/challenge" element={<Challenge />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
