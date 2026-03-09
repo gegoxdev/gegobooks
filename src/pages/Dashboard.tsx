@@ -289,6 +289,11 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Creator Challenge */}
+        {user && (
+          <ChallengeDashboard user={user} waitlistData={waitlistData} />
+        )}
+
         {/* Account Deletion */}
         {!isDeletionPending && (
           <div className="bg-surface rounded-xl border border-border p-6">
