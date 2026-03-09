@@ -16,6 +16,7 @@ import ViewerLinkManager from '@/components/admin/ViewerLinkManager';
 import ViewerDashboard from '@/components/admin/ViewerDashboard';
 import InvestorMetrics from '@/components/admin/InvestorMetrics';
 import WebsiteAnalytics from '@/components/admin/WebsiteAnalytics';
+import ChallengeManagement from '@/components/admin/ChallengeManagement';
 import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 
 type AdminRole = 'readonly' | 'approver' | 'admin' | 'master';
