@@ -71,6 +71,69 @@ export type Database = {
         }
         Relationships: []
       }
+      page_views: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          device_type: string | null
+          duration_ms: number | null
+          id: string
+          os: string | null
+          page_path: string
+          referrer: string | null
+          screen_height: number | null
+          screen_width: number | null
+          session_id: string
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          visitor_id: string
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_type?: string | null
+          duration_ms?: number | null
+          id?: string
+          os?: string | null
+          page_path: string
+          referrer?: string | null
+          screen_height?: number | null
+          screen_width?: number | null
+          session_id: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          visitor_id: string
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_type?: string | null
+          duration_ms?: number | null
+          id?: string
+          os?: string | null
+          page_path?: string
+          referrer?: string | null
+          screen_height?: number | null
+          screen_width?: number | null
+          session_id?: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          visitor_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -243,6 +306,22 @@ export type Database = {
         }
         Relationships: []
       }
+      bounce_rate: {
+        Row: {
+          bounce_pct: number | null
+          bounced_sessions: number | null
+          total_sessions: number | null
+        }
+        Relationships: []
+      }
+      browser_breakdown: {
+        Row: {
+          browser: string | null
+          views: number | null
+          visitors: number | null
+        }
+        Relationships: []
+      }
       churn_rate: {
         Row: {
           churn_pct: number | null
@@ -257,12 +336,36 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_page_views: {
+        Row: {
+          date: string | null
+          views: number | null
+          visitors: number | null
+        }
+        Relationships: []
+      }
+      device_breakdown: {
+        Row: {
+          device_type: string | null
+          views: number | null
+          visitors: number | null
+        }
+        Relationships: []
+      }
       growth_comparisons: {
         Row: {
           dod: number | null
           mom: number | null
           wow: number | null
           yoy: number | null
+        }
+        Relationships: []
+      }
+      hourly_traffic: {
+        Row: {
+          hour: number | null
+          views: number | null
+          visitors: number | null
         }
         Relationships: []
       }
@@ -339,9 +442,39 @@ export type Database = {
         }
         Relationships: []
       }
+      top_pages: {
+        Row: {
+          avg_duration_ms: number | null
+          page_path: string | null
+          unique_visitors: number | null
+          views: number | null
+        }
+        Relationships: []
+      }
       total_waitlist_users: {
         Row: {
           total: number | null
+        }
+        Relationships: []
+      }
+      traffic_overview: {
+        Row: {
+          avg_duration_ms_7d: number | null
+          sessions_7d: number | null
+          views_30d: number | null
+          views_7d: number | null
+          views_today: number | null
+          visitors_30d: number | null
+          visitors_7d: number | null
+          visitors_today: number | null
+        }
+        Relationships: []
+      }
+      traffic_sources: {
+        Row: {
+          page_views: number | null
+          source: string | null
+          unique_visitors: number | null
         }
         Relationships: []
       }
@@ -503,6 +636,10 @@ export type Database = {
       request_account_deletion: { Args: never; Returns: undefined }
       revoke_admin_invite: { Args: { invite_id: string }; Returns: undefined }
       revoke_viewer_link: { Args: { link_id: string }; Returns: undefined }
+      update_page_view_duration: {
+        Args: { p_duration_ms: number; p_id: string }
+        Returns: undefined
+      }
       upgrade_tier: { Args: { new_tier: string }; Returns: undefined }
     }
     Enums: {
