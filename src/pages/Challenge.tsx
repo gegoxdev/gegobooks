@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/Navbar';
 import FooterSection from '@/components/FooterSection';
 import SignupModal from '@/components/SignupModal';
@@ -24,9 +25,37 @@ const prizes = [
 
 const Challenge = () => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [comingSoon, setComingSoon] = useState(true);
   const navigate = useNavigate();
   const utmParams = useUtmParams();
   const waitlistStatus = useWaitlistStatus();
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const { data } = await supabase.from('challenge_settings' as any).select('coming_soon').eq('id', 'global').single();
+      if (data) setComingSoon((data as any).coming_soon);
+    };
+    fetchSettings();
+
+    const channel = supabase.channel('challenge-settings-page')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'challenge_settings' }, (payload) => {
+        if ((payload.new as any)?.coming_soon !== undefined) {
+          setComingSoon((payload.new as any).coming_soon);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const handleJoinChallenge = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      navigate('/dashboard');
+    } else {
+      navigate('/login?redirect=challenge');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,23 +64,25 @@ const Challenge = () => {
       {/* Hero */}
       <section className="pt-28 pb-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-accent/10 text-accent font-body text-sm font-semibold px-4 py-2 rounded-full mb-6">
-            <Clock className="w-4 h-4" />
-            Coming Soon
-          </div>
+          {comingSoon && (
+            <div className="inline-flex items-center gap-2 bg-accent/10 text-accent font-body text-sm font-semibold px-4 py-2 rounded-full mb-6">
+              <Clock className="w-4 h-4" />
+              Coming Soon
+            </div>
+          )}
           <h1 className="font-heading font-extrabold text-4xl md:text-5xl lg:text-6xl text-foreground leading-tight mb-4">
             GegoBooks <span className="text-primary">Creator Challenge</span>
           </h1>
           <p className="font-body text-lg text-muted max-w-2xl mx-auto mb-8">
             A weekly content creation competition for entrepreneurs and small business owners.
-            Create, share, and win cash prizes every week!
+            Create, share, and win cash prizes every week! Must be 18+ to participate.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => setModalOpen(true)}
+              onClick={handleJoinChallenge}
               className="bg-primary text-primary-foreground font-body font-semibold px-8 py-3 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
-              Join the Waitlist to Participate
+              {comingSoon ? 'Join the Waitlist to Participate' : 'Participate Now'}
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
@@ -65,18 +96,20 @@ const Challenge = () => {
       </section>
 
       {/* Coming Soon Banner */}
-      <section className="px-4 pb-12">
-        <div className="max-w-3xl mx-auto bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border border-primary/20 rounded-2xl p-8 text-center">
-          <Gift className="w-12 h-12 text-primary mx-auto mb-4" />
-          <h2 className="font-heading font-bold text-2xl text-foreground mb-2">
-            The Challenge is Coming Soon!
-          </h2>
-          <p className="font-body text-muted max-w-lg mx-auto">
-            We're preparing an exciting weekly content challenge. Join the waitlist now to be
-            the first to know when it launches and to qualify for participation.
-          </p>
-        </div>
-      </section>
+      {comingSoon && (
+        <section className="px-4 pb-12">
+          <div className="max-w-3xl mx-auto bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border border-primary/20 rounded-2xl p-8 text-center">
+            <Gift className="w-12 h-12 text-primary mx-auto mb-4" />
+            <h2 className="font-heading font-bold text-2xl text-foreground mb-2">
+              The Challenge is Coming Soon!
+            </h2>
+            <p className="font-body text-muted max-w-lg mx-auto">
+              We're preparing an exciting weekly content challenge. Join the waitlist now to be
+              the first to know when it launches and to qualify for participation.
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* Prizes */}
       <section className="px-4 py-16 bg-surface">
@@ -130,13 +163,15 @@ const Challenge = () => {
           </h2>
           <div className="space-y-3">
             {[
+              'You must be 18 years or older to participate.',
               'Weekly challenges run Monday–Sunday.',
               'You must be on the waitlist and have at least 3 referrals to qualify.',
               'Create a post or reel based on the weekly theme.',
               'Tag @GegoBooks and use hashtag #GegoBooksChallenge.',
               'Submit your content link through your dashboard.',
-              '5 weekly winners are selected (by engagement or admin choice).',
-              '1 monthly grand prize is awarded for the best content of the month.',
+              'Winners are selected based on: 30% Engagement, 40% Creativity, 30% Weekly Theme Clarity.',
+              '5 weekly winners are selected each week.',
+              '1 monthly grand prize winner is chosen from the best weekly submissions of the month.',
               'Submissions are archived weekly.',
             ].map((rule, i) => (
               <div key={i} className="flex items-start gap-3 bg-background rounded-lg p-4 border border-border">
@@ -155,13 +190,15 @@ const Challenge = () => {
             Ready to Compete?
           </h2>
           <p className="font-body text-muted mb-6">
-            Join the waitlist today and be the first to know when the GegoBooks Creator Challenge launches.
+            {comingSoon
+              ? 'Join the waitlist today and be the first to know when the GegoBooks Creator Challenge launches.'
+              : 'Sign in and head to your dashboard to submit your content!'}
           </p>
           <button
-            onClick={() => setModalOpen(true)}
+            onClick={handleJoinChallenge}
             className="bg-primary text-primary-foreground font-body font-semibold px-8 py-3 rounded-lg hover:opacity-90 transition-opacity"
           >
-            Join the Waitlist Now
+            {comingSoon ? 'Join the Waitlist Now' : 'Go to Dashboard'}
           </button>
         </div>
       </section>
