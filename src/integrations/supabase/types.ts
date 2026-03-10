@@ -104,6 +104,27 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_settings: {
+        Row: {
+          coming_soon: boolean
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          coming_soon?: boolean
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          coming_soon?: boolean
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       challenge_submissions: {
         Row: {
           caption: string | null
@@ -385,6 +406,7 @@ export type Database = {
           referral_code: string | null
           referrals_count: number
           referred_by: string | null
+          signup_source: string | null
           user_type: string
           utm_campaign: string | null
           utm_medium: string | null
@@ -399,6 +421,7 @@ export type Database = {
           referral_code?: string | null
           referrals_count?: number
           referred_by?: string | null
+          signup_source?: string | null
           user_type?: string
           utm_campaign?: string | null
           utm_medium?: string | null
@@ -413,6 +436,7 @@ export type Database = {
           referral_code?: string | null
           referrals_count?: number
           referred_by?: string | null
+          signup_source?: string | null
           user_type?: string
           utm_campaign?: string | null
           utm_medium?: string | null
