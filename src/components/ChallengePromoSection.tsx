@@ -1,8 +1,29 @@
+import { useState, useEffect } from 'react';
 import { Trophy, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const ChallengePromoSection = () => {
   const navigate = useNavigate();
+  const [comingSoon, setComingSoon] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const { data } = await supabase.from('challenge_settings' as any).select('coming_soon').eq('id', 'global').single();
+      if (data) setComingSoon((data as any).coming_soon);
+    };
+    fetch();
+
+    const channel = supabase.channel('challenge-settings-promo')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'challenge_settings' }, (payload) => {
+        if ((payload.new as any)?.coming_soon !== undefined) {
+          setComingSoon((payload.new as any).coming_soon);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   return (
     <section className="px-4 py-16 md:py-20">
@@ -12,14 +33,14 @@ const ChallengePromoSection = () => {
             <div>
               <div className="inline-flex items-center gap-2 bg-accent/10 text-accent font-body text-sm font-semibold px-3 py-1 rounded-full mb-4">
                 <Trophy className="w-4 h-4" />
-                Coming Soon
+                {comingSoon ? 'Coming Soon' : 'Live Now! 🔥'}
               </div>
               <h2 className="font-heading font-extrabold text-3xl md:text-4xl text-foreground leading-tight mb-4">
                 GegoBooks <span className="text-primary">Creator Challenge</span>
               </h2>
               <p className="font-body text-muted mb-6">
                 Join our weekly content creation competition. Create posts about
-                entrepreneurship and accounting, and win cash prizes every week!
+                entrepreneurship and accounting, and win cash prizes every week! Must be 18+.
               </p>
               <button
                 onClick={() => navigate('/challenge')}

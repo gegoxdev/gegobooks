@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Trophy, Send, Clock, Star, Award, ExternalLink } from 'lucide-react';
+import { Trophy, Send, Clock, ExternalLink, BookOpen } from 'lucide-react';
 
 interface ChallengeDashboardProps {
   user: any;
@@ -33,33 +34,66 @@ type Submission = {
 const platforms = ['instagram', 'facebook', 'linkedin', 'twitter', 'tiktok'];
 
 const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => {
+  const navigate = useNavigate();
   const [challenge, setChallenge] = useState<ActiveChallenge | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [comingSoon, setComingSoon] = useState(true);
   const [form, setForm] = useState({ content_url: '', platform: 'instagram', caption: '' });
   const [showForm, setShowForm] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
 
   const referralsCount = waitlistData?.referrals_count || 0;
   const isEligible = referralsCount >= 3;
-  const comingSoon = true; // Set to false when challenge launches
 
   useEffect(() => {
-    const fetch = async () => {
-      const { data: challengeData } = await supabase.rpc('get_active_challenge');
-      if (challengeData && Array.isArray(challengeData) && challengeData.length > 0) {
-        setChallenge(challengeData[0] as ActiveChallenge);
+    const fetchData = async () => {
+      const [settingsRes, challengeRes, subsRes] = await Promise.all([
+        supabase.from('challenge_settings' as any).select('coming_soon').eq('id', 'global').single(),
+        supabase.rpc('get_active_challenge'),
+        supabase.from('challenge_submissions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+      ]);
+      if (settingsRes.data) setComingSoon((settingsRes.data as any).coming_soon);
+      if (challengeRes.data && Array.isArray(challengeRes.data) && challengeRes.data.length > 0) {
+        setChallenge(challengeRes.data[0] as ActiveChallenge);
       }
-      const { data: subs } = await supabase.from('challenge_submissions').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
-      if (subs) setSubmissions(subs as Submission[]);
+      if (subsRes.data) setSubmissions(subsRes.data as Submission[]);
       setLoading(false);
     };
-    fetch();
+    fetchData();
+
+    // Realtime: listen for challenge_settings changes
+    const settingsChannel = supabase.channel('challenge-settings-user')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'challenge_settings' }, (payload) => {
+        if ((payload.new as any)?.coming_soon !== undefined) {
+          setComingSoon((payload.new as any).coming_soon);
+        }
+      })
+      .subscribe();
+
+    // Realtime: listen for challenge_weeks changes
+    const weeksChannel = supabase.channel('challenge-weeks-user')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'challenge_weeks' }, async () => {
+        const { data } = await supabase.rpc('get_active_challenge');
+        if (data && Array.isArray(data) && data.length > 0) {
+          setChallenge(data[0] as ActiveChallenge);
+        } else {
+          setChallenge(null);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(settingsChannel);
+      supabase.removeChannel(weeksChannel);
+    };
   }, [user.id]);
 
   const handleSubmit = async () => {
     if (!form.content_url.trim()) { toast.error('Content URL is required'); return; }
     if (!challenge) { toast.error('No active challenge'); return; }
+    if (!ageConfirmed) { toast.error('You must confirm you are 18+ to participate'); return; }
     setSubmitting(true);
     const { error } = await supabase.from('challenge_submissions').insert({
       challenge_week_id: challenge.id,
@@ -75,12 +109,10 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
     setForm({ content_url: '', platform: 'instagram', caption: '' });
     setShowForm(false);
     setSubmitting(false);
-    // Refresh
     const { data: subs } = await supabase.from('challenge_submissions').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
     if (subs) setSubmissions(subs as Submission[]);
   };
 
-  // Badges
   const badges = [];
   if (submissions.some(s => s.status === 'approved')) badges.push({ icon: '📝', label: 'Submitted this week' });
   if (submissions.some(s => s.is_weekly_winner)) badges.push({ icon: '🏆', label: 'Creator of the Week' });
@@ -90,13 +122,20 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
 
   return (
     <div className="bg-surface rounded-xl border border-border p-6 space-y-6">
-      <h2 className="font-heading font-bold text-lg text-foreground flex items-center gap-2">
-        <Trophy className="w-5 h-5 text-primary" />
-        Creator Challenge
-      </h2>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h2 className="font-heading font-bold text-lg text-foreground flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-primary" />
+          Creator Challenge
+        </h2>
+        <button
+          onClick={() => navigate('/challenge')}
+          className="flex items-center gap-1 font-body text-sm text-primary hover:underline"
+        >
+          <BookOpen className="w-4 h-4" /> Learn More
+        </button>
+      </div>
 
       {comingSoon ? (
-        /* Coming Soon State */
         <div className="text-center py-8 space-y-4">
           <div className="inline-flex items-center gap-2 bg-accent/10 text-accent font-body text-sm font-semibold px-4 py-2 rounded-full">
             <Clock className="w-4 h-4" />
@@ -106,7 +145,7 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
             The GegoBooks Creator Challenge is launching soon!
           </h3>
           <p className="font-body text-muted text-sm max-w-md mx-auto">
-            A weekly content creation competition with cash prizes. Make sure you have at least 3 referrals to qualify.
+            A weekly content creation competition with cash prizes. You must be 18+ and have at least 3 referrals to qualify.
           </p>
           <div className="bg-background rounded-xl border border-border p-4 max-w-sm mx-auto">
             <p className="font-body text-sm text-muted mb-2">Your Eligibility</p>
@@ -135,9 +174,7 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
           </div>
         </div>
       ) : (
-        /* Active Challenge State */
         <>
-          {/* Active Theme */}
           {challenge ? (
             <div className="bg-primary/5 rounded-xl border border-primary/20 p-5">
               <div className="flex items-start justify-between flex-wrap gap-2">
@@ -153,9 +190,10 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
                   <p className="font-body text-xs text-muted mt-1">{challenge.start_date} – {challenge.end_date}</p>
                 </div>
               </div>
-              <div className="mt-4 flex items-center gap-3 text-xs font-body text-muted">
-                <span>📌 Tag @GegoBooks</span>
-                <span>📌 Use #GegoBooksChallenge</span>
+              <div className="mt-3 font-body text-xs text-muted space-y-1">
+                <p>📌 Tag @GegoBooks · Use #GegoBooksChallenge</p>
+                <p>📊 Scoring: 30% Engagement · 40% Creativity · 30% Theme Clarity</p>
+                <p>⚠️ Must be 18+ to participate</p>
               </div>
             </div>
           ) : (
@@ -165,7 +203,6 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
             </div>
           )}
 
-          {/* Eligibility */}
           {!isEligible && (
             <div className="bg-accent/5 border border-accent/20 rounded-lg p-4">
               <p className="font-body text-sm text-foreground font-medium">You need at least 3 referrals to participate.</p>
@@ -176,7 +213,6 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
             </div>
           )}
 
-          {/* Submit Content */}
           {isEligible && challenge && (
             <div>
               <button onClick={() => setShowForm(!showForm)} className="bg-primary text-primary-foreground font-body text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 flex items-center gap-2">
@@ -186,9 +222,13 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
                 <div className="mt-3 bg-background rounded-lg border border-border p-4 space-y-3">
                   <input placeholder="Content URL (Instagram, Facebook, etc.) *" value={form.content_url} onChange={e => setForm({ ...form, content_url: e.target.value })} className="w-full font-body text-sm border border-border rounded-lg px-3 py-2 bg-surface text-foreground" />
                   <select value={form.platform} onChange={e => setForm({ ...form, platform: e.target.value })} className="w-full font-body text-sm border border-border rounded-lg px-3 py-2 bg-surface text-foreground">
-                    {platforms.map(p => <option key={p} value={p} className="capitalize">{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+                    {platforms.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
                   </select>
                   <textarea placeholder="Caption (optional)" value={form.caption} onChange={e => setForm({ ...form, caption: e.target.value })} className="w-full font-body text-sm border border-border rounded-lg px-3 py-2 bg-surface text-foreground" rows={2} />
+                  <label className="flex items-center gap-2 font-body text-sm text-foreground">
+                    <input type="checkbox" checked={ageConfirmed} onChange={e => setAgeConfirmed(e.target.checked)} className="rounded border-border" />
+                    I confirm I am 18 years or older
+                  </label>
                   <button onClick={handleSubmit} disabled={submitting} className="bg-primary text-primary-foreground font-body text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50">
                     {submitting ? 'Submitting...' : 'Submit'}
                   </button>
@@ -197,7 +237,6 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
             </div>
           )}
 
-          {/* Badges */}
           {badges.length > 0 && (
             <div>
               <p className="font-body text-sm font-semibold text-foreground mb-2">Your Badges</p>
@@ -211,7 +250,6 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
             </div>
           )}
 
-          {/* Submission History */}
           {submissions.length > 0 && (
             <div>
               <p className="font-body text-sm font-semibold text-foreground mb-2">Your Submissions</p>

@@ -13,8 +13,9 @@ export const useInactivityTimeout = () => {
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
     toast.info('You were signed out due to inactivity.');
-    navigate('/login');
-  }, [navigate]);
+    // Force a full page refresh to clear all state
+    window.location.href = '/login';
+  }, []);
 
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);

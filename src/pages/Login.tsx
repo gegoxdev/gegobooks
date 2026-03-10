@@ -24,6 +24,7 @@ const Login = () => {
 
   const getRedirectPath = () => {
     if (redirect === 'waitlist-tiers') return '/#waitlist-tiers';
+    if (redirect === 'challenge') return '/dashboard';
     return '/dashboard';
   };
 
