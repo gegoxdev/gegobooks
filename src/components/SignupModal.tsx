@@ -59,6 +59,25 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
 
     try {
       const emailNormalized = form.email.trim().toLowerCase();
+      // Determine signup source
+      let signupSource = 'direct';
+      if (utmParams.utm_source) {
+        signupSource = utmParams.utm_source;
+      } else if (utmParams.utm_campaign === 'challenge') {
+        signupSource = 'challenge';
+      } else if (document.referrer) {
+        try {
+          const refHost = new URL(document.referrer).hostname;
+          if (refHost.includes('facebook') || refHost.includes('fb.')) signupSource = 'facebook';
+          else if (refHost.includes('instagram')) signupSource = 'instagram';
+          else if (refHost.includes('linkedin')) signupSource = 'linkedin';
+          else if (refHost.includes('twitter') || refHost.includes('x.com')) signupSource = 'twitter';
+          else if (refHost.includes('tiktok')) signupSource = 'tiktok';
+          else if (refHost.includes('youtube')) signupSource = 'youtube';
+          else if (refHost.includes('whatsapp')) signupSource = 'whatsapp';
+          else signupSource = refHost;
+        } catch { /* keep direct */ }
+      }
       const { error } = await supabase
         .from('waitlist_signups')
         .insert({
@@ -69,7 +88,8 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
           utm_source: utmParams.utm_source || null,
           utm_medium: utmParams.utm_medium || null,
           utm_campaign: utmParams.utm_campaign || null,
-        });
+          signup_source: signupSource,
+        } as any);
 
       if (error) {
         console.error('Waitlist signup error:', error.code, error.message);
