@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import logo from '@/assets/gegobooks-logo.png';
 import PasswordInput from '@/components/PasswordInput';
+import { ArrowLeft } from 'lucide-react';
 
 type AuthView = 'sign_in' | 'sign_up' | 'forgot_password';
 
@@ -11,16 +12,23 @@ const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect');
+  const refCode = searchParams.get('ref') || '';
 
   const [view, setView] = useState<AuthView>('sign_in');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [referralCode, setReferralCode] = useState(refCode);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Auto-switch to sign_up view if ref code is present
+  useEffect(() => {
+    if (refCode) setView('sign_up');
+  }, [refCode]);
 
   const getRedirectPath = () => {
     if (redirect === 'waitlist-tiers') return '/#waitlist-tiers';
@@ -78,7 +86,7 @@ const Login = () => {
       password,
       options: {
         emailRedirectTo: window.location.origin + (redirect ? `/login?redirect=${redirect}` : '/dashboard'),
-        data: { full_name: fullName.trim() },
+        data: { full_name: fullName.trim(), referral_code: referralCode.trim() || null },
       },
     });
 
@@ -99,7 +107,6 @@ const Login = () => {
       return;
     }
 
-    // Redirect to OTP verification page for new signups
     const redirectPath = redirect ? `/login?redirect=${redirect}` : '/dashboard';
     navigate(`/verify?email=${encodeURIComponent(email.trim().toLowerCase())}&redirect=${encodeURIComponent(redirectPath)}`);
     setLoading(false);
@@ -131,7 +138,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Left decorative panel — hidden on mobile */}
+      {/* Left decorative panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-primary relative flex-col justify-between p-12 overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 -left-20 w-96 h-96 rounded-full bg-accent" />
@@ -170,6 +177,15 @@ const Login = () => {
       {/* Right form panel */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
+          {/* Back to Home - prominent */}
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 font-body text-sm font-semibold text-primary hover:text-primary/80 transition-colors mb-6 bg-primary/10 px-4 py-2 rounded-lg"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Home
+          </button>
+
           {/* Mobile logo */}
           <div className="flex items-center gap-2 mb-8 lg:hidden">
             <img src={logo} alt="GegoBooks" className="w-8 h-8 rounded-md" />
@@ -249,6 +265,25 @@ const Login = () => {
                   />
                 )}
               </>
+            )}
+
+            {/* Referral Code Field - only on sign up */}
+            {view === 'sign_up' && (
+              <div>
+                <label className="font-body text-sm font-medium text-foreground mb-1.5 block">
+                  Referral Code <span className="text-muted font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter referral code"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                  className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm bg-surface text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow uppercase"
+                />
+                {referralCode && (
+                  <p className="font-body text-xs text-primary mt-1">✓ Referral code will be applied to your waitlist signup</p>
+                )}
+              </div>
             )}
 
             <button
@@ -336,15 +371,6 @@ const Login = () => {
                 </button>
               </p>
             )}
-          </div>
-
-          <div className="mt-8 text-center">
-            <button
-              onClick={() => navigate('/')}
-              className="font-body text-sm text-muted hover:text-foreground transition-colors"
-            >
-              ← Back to home
-            </button>
           </div>
         </div>
       </div>

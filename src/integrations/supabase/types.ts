@@ -108,20 +108,32 @@ export type Database = {
         Row: {
           coming_soon: boolean
           id: string
+          monthly_prize_amount: number | null
+          monthly_winner_count: number | null
           updated_at: string
           updated_by: string | null
+          weekly_prize_amount: number | null
+          weekly_winner_count: number | null
         }
         Insert: {
           coming_soon?: boolean
           id?: string
+          monthly_prize_amount?: number | null
+          monthly_winner_count?: number | null
           updated_at?: string
           updated_by?: string | null
+          weekly_prize_amount?: number | null
+          weekly_winner_count?: number | null
         }
         Update: {
           coming_soon?: boolean
           id?: string
+          monthly_prize_amount?: number | null
+          monthly_winner_count?: number | null
           updated_at?: string
           updated_by?: string | null
+          weekly_prize_amount?: number | null
+          weekly_winner_count?: number | null
         }
         Relationships: []
       }
@@ -135,7 +147,11 @@ export type Database = {
           is_monthly_winner: boolean
           is_weekly_winner: boolean
           platform: string
+          score_creativity: number | null
+          score_engagement: number | null
+          score_theme_clarity: number | null
           status: string
+          total_score: number | null
           updated_at: string
           user_email: string
           user_id: string
@@ -150,7 +166,11 @@ export type Database = {
           is_monthly_winner?: boolean
           is_weekly_winner?: boolean
           platform?: string
+          score_creativity?: number | null
+          score_engagement?: number | null
+          score_theme_clarity?: number | null
           status?: string
+          total_score?: number | null
           updated_at?: string
           user_email: string
           user_id: string
@@ -165,7 +185,11 @@ export type Database = {
           is_monthly_winner?: boolean
           is_weekly_winner?: boolean
           platform?: string
+          score_creativity?: number | null
+          score_engagement?: number | null
+          score_theme_clarity?: number | null
           status?: string
+          total_score?: number | null
           updated_at?: string
           user_email?: string
           user_id?: string
@@ -183,6 +207,8 @@ export type Database = {
       }
       challenge_weeks: {
         Row: {
+          attachment_name: string | null
+          attachment_url: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -196,6 +222,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_url?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -209,6 +237,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attachment_name?: string | null
+          attachment_url?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -480,6 +510,7 @@ export type Database = {
       challenge_leaderboard: {
         Row: {
           approved_submissions: number | null
+          avg_score: number | null
           monthly_wins: number | null
           total_submissions: number | null
           user_email: string | null
@@ -693,6 +724,15 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: undefined
       }
+      admin_score_submission: {
+        Args: {
+          p_creativity: number
+          p_engagement: number
+          p_submission_id: string
+          p_theme_clarity: number
+        }
+        Returns: undefined
+      }
       admin_select_monthly_winner: {
         Args: { submission_id: string }
         Returns: undefined
@@ -755,6 +795,30 @@ export type Database = {
         }[]
       }
       get_admin_user_stats: { Args: never; Returns: Json }
+      get_challenge_leaderboard: {
+        Args: never
+        Returns: {
+          approved_submissions: number
+          avg_score: number
+          monthly_wins: number
+          user_name: string
+          weekly_wins: number
+        }[]
+      }
+      get_challenge_settings: {
+        Args: never
+        Returns: {
+          coming_soon: boolean
+          monthly_prize_amount: number
+          monthly_winner_count: number
+          weekly_prize_amount: number
+          weekly_winner_count: number
+        }[]
+      }
+      get_dynamic_waitlist_position: {
+        Args: { p_email: string }
+        Returns: number
+      }
       get_invite_email: { Args: { invite_token: string }; Returns: string }
       get_my_signup: {
         Args: { p_email: string }

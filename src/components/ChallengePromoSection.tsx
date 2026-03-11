@@ -3,23 +3,32 @@ import { Trophy, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
+type ChallengeSettings = {
+  coming_soon: boolean;
+  weekly_prize_amount: number;
+  weekly_winner_count: number;
+  monthly_prize_amount: number;
+  monthly_winner_count: number;
+};
+
 const ChallengePromoSection = () => {
   const navigate = useNavigate();
-  const [comingSoon, setComingSoon] = useState(true);
+  const [settings, setSettings] = useState<ChallengeSettings>({
+    coming_soon: true, weekly_prize_amount: 20000, weekly_winner_count: 5,
+    monthly_prize_amount: 100000, monthly_winner_count: 1,
+  });
 
   useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase.from('challenge_settings' as any).select('coming_soon').eq('id', 'global').single();
-      if (data) setComingSoon((data as any).coming_soon);
+    const fetchSettings = async () => {
+      const { data } = await supabase.rpc('get_challenge_settings');
+      if (data && Array.isArray(data) && data.length > 0) {
+        setSettings(data[0] as ChallengeSettings);
+      }
     };
-    fetch();
+    fetchSettings();
 
     const channel = supabase.channel('challenge-settings-promo')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'challenge_settings' }, (payload) => {
-        if ((payload.new as any)?.coming_soon !== undefined) {
-          setComingSoon((payload.new as any).coming_soon);
-        }
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'challenge_settings' }, () => { fetchSettings(); })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -33,7 +42,7 @@ const ChallengePromoSection = () => {
             <div>
               <div className="inline-flex items-center gap-2 bg-accent/10 text-accent font-body text-sm font-semibold px-3 py-1 rounded-full mb-4">
                 <Trophy className="w-4 h-4" />
-                {comingSoon ? 'Coming Soon' : 'Live Now! 🔥'}
+                {settings.coming_soon ? 'Coming Soon' : 'Live Now! 🔥'}
               </div>
               <h2 className="font-heading font-extrabold text-3xl md:text-4xl text-foreground leading-tight mb-4">
                 GegoBooks <span className="text-primary">Creator Challenge</span>
@@ -52,12 +61,12 @@ const ChallengePromoSection = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-surface rounded-xl border border-border p-5 text-center">
                 <p className="text-3xl mb-1">🏆</p>
-                <p className="font-heading font-bold text-primary text-lg">₦20,000</p>
-                <p className="font-body text-xs text-muted">5 Weekly Winners</p>
+                <p className="font-heading font-bold text-primary text-lg">₦{settings.weekly_prize_amount.toLocaleString()}</p>
+                <p className="font-body text-xs text-muted">{settings.weekly_winner_count} Weekly Winner{settings.weekly_winner_count > 1 ? 's' : ''}</p>
               </div>
               <div className="bg-surface rounded-xl border border-border p-5 text-center">
                 <p className="text-3xl mb-1">👑</p>
-                <p className="font-heading font-bold text-accent text-lg">₦100,000</p>
+                <p className="font-heading font-bold text-accent text-lg">₦{settings.monthly_prize_amount.toLocaleString()}</p>
                 <p className="font-body text-xs text-muted">Monthly Grand Prize</p>
               </div>
               <div className="bg-surface rounded-xl border border-border p-5 text-center">

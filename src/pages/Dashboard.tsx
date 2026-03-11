@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import ReferralDashboard from '@/components/ReferralDashboard';
@@ -30,35 +30,51 @@ const Dashboard = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const fetchDashboardData = useCallback(async (userId: string) => {
+    setLoading(true);
+    try {
+      const [waitlistRes, profileRes] = await Promise.all([
+        supabase.rpc('get_my_waitlist_status'),
+        supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+      ]);
+      if (waitlistRes.data && Array.isArray(waitlistRes.data) && waitlistRes.data.length > 0) {
+        setWaitlistData(waitlistRes.data[0]);
+      } else {
+        setWaitlistData(null);
+      }
+      if (profileRes.data) setProfile(profileRes.data);
+    } catch {
+      // Silently handle errors
+    }
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
+    let mounted = true;
+    
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!mounted) return;
+      if (!session) { navigate('/login'); return; }
+      setUser(session.user);
+    };
+    
+    initAuth();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
       if (!session) { navigate('/login'); return; }
       setUser(session.user);
     });
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) { navigate('/login'); return; }
-      setUser(session.user);
-    });
-    return () => subscription.unsubscribe();
+
+    return () => { mounted = false; subscription.unsubscribe(); };
   }, [navigate]);
 
   useEffect(() => {
     if (!user) return;
-    const fetchData = async () => {
-      setLoading(true);
-      const [waitlistRes, profileRes] = await Promise.all([
-        supabase.rpc('get_my_waitlist_status'),
-        supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
-      ]);
-      if (waitlistRes.data && Array.isArray(waitlistRes.data) && waitlistRes.data.length > 0) {
-        setWaitlistData(waitlistRes.data[0]);
-      }
-      if (profileRes.data) setProfile(profileRes.data);
-      setLoading(false);
-    };
-    fetchData();
+    fetchDashboardData(user.id);
 
-    // Check for pending payment from interrupted session
+    // Check for pending payment
     const checkPendingPayment = async () => {
       const pending = getPendingPayment();
       if (!pending) return;
@@ -71,13 +87,8 @@ const Dashboard = () => {
         if (!error && verifyResult?.success) {
           toast.success(`🎉 Payment confirmed! Upgraded to ${pending.tier === 'founder' ? 'Founder Circle' : 'Priority Access'}!`);
           clearPendingPayment();
-          setProfile((p: any) => ({ ...p, tier: pending.tier }));
-          const { data: wlData } = await supabase.rpc('get_my_waitlist_status');
-          if (wlData && Array.isArray(wlData) && wlData.length > 0) {
-            setWaitlistData(wlData[0]);
-          }
+          fetchDashboardData(user.id);
         } else {
-          // Payment not completed or already processed — silently clear
           clearPendingPayment();
         }
       } catch {
@@ -87,25 +98,18 @@ const Dashboard = () => {
     };
     checkPendingPayment();
 
-    // Subscribe to realtime profile changes (e.g. admin tier updates)
+    // Realtime profile changes
     const channel = supabase
       .channel('profile-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          setProfile((prev: any) => ({ ...prev, ...payload.new }));
-        }
-      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `user_id=eq.${user.id}` }, (payload) => {
+        setProfile((prev: any) => ({ ...prev, ...payload.new }));
+        // Re-fetch waitlist data since tier change affects ranking
+        fetchDashboardData(user.id);
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, fetchDashboardData]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -132,12 +136,7 @@ const Dashboard = () => {
             toast.error(verifyResult?.error || 'Payment verification failed. Please contact support.');
           } else {
             toast.success(`🎉 Upgraded to ${tierId === 'founder' ? 'Founder Circle' : 'Priority Access'}!`);
-            setProfile((p: any) => ({ ...p, tier: tierId }));
-            // Re-fetch waitlist data to get updated position
-            const { data: wlData } = await supabase.rpc('get_my_waitlist_status');
-            if (wlData && Array.isArray(wlData) && wlData.length > 0) {
-              setWaitlistData(wlData[0]);
-            }
+            fetchDashboardData(user.id);
           }
         } catch {
           toast.dismiss();
@@ -200,49 +199,50 @@ const Dashboard = () => {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-        {/* Deletion pending banner */}
         {isDeletionPending && (
           <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="font-body text-sm text-foreground font-medium">Account deletion in progress</p>
               <p className="font-body text-xs text-muted mt-1">
-                Your account and data will be permanently deleted 30 days after your request ({new Date(profile.deleted_at).toLocaleDateString()}). You can cancel this at any time.
+                Your account and data will be permanently deleted 30 days after your request ({new Date(profile.deleted_at).toLocaleDateString()}).
               </p>
-              <button
-                onClick={handleCancelDeletion}
-                className="mt-2 font-body text-sm text-primary hover:underline font-medium"
-              >
+              <button onClick={handleCancelDeletion} className="mt-2 font-body text-sm text-primary hover:underline font-medium">
                 Cancel Deletion
               </button>
             </div>
           </div>
         )}
 
-        {/* Position & Ranking */}
+        {/* Waitlist Status */}
         <div className="bg-surface rounded-xl border border-border p-6">
           <h2 className="font-heading font-bold text-lg text-foreground mb-4">Your Waitlist Status</h2>
           {waitlistData ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <p className="font-heading font-bold text-3xl text-primary">#{waitlistData.waitlist_position}</p>
-                <p className="font-body text-xs text-muted mt-1">Position</p>
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <p className="font-heading font-bold text-3xl text-primary">#{waitlistData.waitlist_position}</p>
+                  <p className="font-body text-xs text-muted mt-1">Position</p>
+                </div>
+                <div className="text-center">
+                  <p className="font-heading font-bold text-3xl text-foreground">{waitlistData.referrals_count}</p>
+                  <p className="font-body text-xs text-muted mt-1">Referrals</p>
+                </div>
+                <div className="text-center">
+                  <p className="font-heading font-bold text-sm text-foreground capitalize">{waitlistData.user_type}</p>
+                  <p className="font-body text-xs text-muted mt-1">Account Type</p>
+                </div>
+                <div className="text-center">
+                  <p className={`font-heading font-bold text-sm ${tier === 'founder' ? 'text-accent' : tier === 'priority' ? 'text-primary' : 'text-muted'}`}>
+                    {tierLabels[tier]}
+                  </p>
+                  <p className="font-body text-xs text-muted mt-1">Tier</p>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="font-heading font-bold text-3xl text-foreground">{waitlistData.referrals_count}</p>
-                <p className="font-body text-xs text-muted mt-1">Referrals</p>
-              </div>
-              <div className="text-center">
-                <p className="font-heading font-bold text-sm text-foreground capitalize">{waitlistData.user_type}</p>
-                <p className="font-body text-xs text-muted mt-1">Account Type</p>
-              </div>
-              <div className="text-center">
-                <p className={`font-heading font-bold text-sm ${tier === 'founder' ? 'text-accent' : tier === 'priority' ? 'text-primary' : 'text-muted'}`}>
-                  {tierLabels[tier]}
-                </p>
-                <p className="font-body text-xs text-muted mt-1">Tier</p>
-              </div>
-            </div>
+              <p className="font-body text-xs text-muted mt-4 text-center">
+                💡 Ranking priority: Founder Circle → Priority Access → Free Waitlist. Each referral moves you up within your tier.
+              </p>
+            </>
           ) : (
             <p className="font-body text-sm text-muted">
               No waitlist signup found for this email. Please{' '}
@@ -255,7 +255,7 @@ const Dashboard = () => {
         {tier !== 'founder' && (
           <div className="bg-surface rounded-xl border border-border p-6">
             <h2 className="font-heading font-bold text-lg text-foreground mb-2">Upgrade Your Access</h2>
-            <p className="font-body text-sm text-muted mb-4">Skip the line with a paid tier.</p>
+            <p className="font-body text-sm text-muted mb-4">Skip the line with a paid tier. Paid tiers rank higher regardless of referrals.</p>
             <div className="grid md:grid-cols-2 gap-4">
               {tier === 'free' && (
                 <button
@@ -277,7 +277,7 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Referral Section */}
+        {/* Referral Section - only for authenticated users with waitlist data */}
         {waitlistData && (
           <div className="bg-surface rounded-xl border border-border p-6">
             <ReferralDashboard
@@ -299,32 +299,20 @@ const Dashboard = () => {
           <div className="bg-surface rounded-xl border border-border p-6">
             <h2 className="font-heading font-bold text-lg text-foreground mb-2">Delete Account</h2>
             <p className="font-body text-sm text-muted mb-4">
-              Request permanent deletion of your account. Your data will be retained for 30 days per our privacy policy, after which it will be permanently removed. You can cancel this request at any time during the retention period.
+              Request permanent deletion of your account. Your data will be retained for 30 days per our privacy policy.
             </p>
             {showDeleteConfirm ? (
               <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-4">
                 <p className="font-body text-sm text-foreground font-medium mb-3">Are you sure? This will schedule your account for deletion.</p>
                 <div className="flex gap-3">
-                  <button
-                    onClick={handleRequestDeletion}
-                    disabled={deleteLoading}
-                    className="bg-destructive text-destructive-foreground font-body text-sm font-medium px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50"
-                  >
+                  <button onClick={handleRequestDeletion} disabled={deleteLoading} className="bg-destructive text-destructive-foreground font-body text-sm font-medium px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50">
                     {deleteLoading ? 'Processing...' : 'Yes, Delete My Account'}
                   </button>
-                  <button
-                    onClick={() => setShowDeleteConfirm(false)}
-                    className="bg-muted/20 text-foreground font-body text-sm font-medium px-4 py-2 rounded-lg hover:bg-muted/30"
-                  >
-                    Cancel
-                  </button>
+                  <button onClick={() => setShowDeleteConfirm(false)} className="bg-muted/20 text-foreground font-body text-sm font-medium px-4 py-2 rounded-lg hover:bg-muted/30">Cancel</button>
                 </div>
               </div>
             ) : (
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="font-body text-sm text-destructive hover:underline font-medium"
-              >
+              <button onClick={() => setShowDeleteConfirm(true)} className="font-body text-sm text-destructive hover:underline font-medium">
                 Request Account Deletion
               </button>
             )}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import ReferralDashboard from './ReferralDashboard';
 import { CheckCircle } from 'lucide-react';
@@ -27,7 +28,8 @@ interface SignupModalProps {
 }
 
 const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModalProps) => {
-  const [form, setForm] = useState({ fullName: '', email: '', userType: 'user' });
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ fullName: '', email: '', userType: 'user', referralCode: utmParams.ref || '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [signupData, setSignupData] = useState<{
@@ -38,7 +40,6 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
 
   if (!isOpen) return null;
 
-  // If user is signed in and already on the waitlist, show status instead of form
   const alreadyJoined = waitlistStatus?.isReady && waitlistStatus?.isLoggedIn && waitlistStatus?.isOnWaitlist && waitlistStatus?.waitlistData;
 
   const validate = () => {
@@ -59,7 +60,6 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
 
     try {
       const emailNormalized = form.email.trim().toLowerCase();
-      // Determine signup source
       let signupSource = 'direct';
       if (utmParams.utm_source) {
         signupSource = utmParams.utm_source;
@@ -78,13 +78,14 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
           else signupSource = refHost;
         } catch { /* keep direct */ }
       }
+
       const { error } = await supabase
         .from('waitlist_signups')
         .insert({
           full_name: form.fullName.trim(),
           email: emailNormalized,
           user_type: form.userType,
-          referred_by: utmParams.ref || null,
+          referred_by: form.referralCode.trim() || utmParams.ref || null,
           utm_source: utmParams.utm_source || null,
           utm_medium: utmParams.utm_medium || null,
           utm_campaign: utmParams.utm_campaign || null,
@@ -92,7 +93,6 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
         } as any);
 
       if (error) {
-        console.error('Waitlist signup error:', error.code, error.message);
         if (error.code === '23505') {
           setErrors({ email: 'This email is already on the waitlist!' });
         } else if (error.code === '42501') {
@@ -123,7 +123,7 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
   const handleClose = () => {
     setSignupData(null);
     setErrors({});
-    setForm({ fullName: '', email: '', userType: 'user' });
+    setForm({ fullName: '', email: '', userType: 'user', referralCode: '' });
     onClose();
   };
 
@@ -165,39 +165,47 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
             </div>
 
             <p className="font-body text-xs text-muted mb-4">
-              Want to move up? Share your referral code with friends!
+              Sign up for an account to get your referral code and link!
             </p>
 
-            <div className="bg-soft-white rounded-lg px-4 py-3 flex items-center justify-between gap-2 mb-4">
-              <code className="font-body text-sm text-foreground font-medium">
-                {waitlistStatus.waitlistData!.referral_code}
-              </code>
+            <div className="flex gap-3 justify-center">
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(
-                    `${window.location.origin}?ref=${waitlistStatus.waitlistData!.referral_code}`
-                  );
-                }}
-                className="font-body text-xs text-primary font-semibold hover:underline"
+                onClick={() => { handleClose(); navigate('/login'); }}
+                className="bg-primary text-primary-foreground font-body font-semibold px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity"
               >
-                Copy link
+                Sign Up to Get Referral Link
+              </button>
+              <button
+                onClick={handleClose}
+                className="bg-muted/20 text-foreground font-body font-medium px-5 py-2.5 rounded-lg hover:bg-muted/30"
+              >
+                Close
               </button>
             </div>
-
-            <button
-              onClick={handleClose}
-              className="w-full bg-primary text-primary-foreground font-body font-semibold py-3 rounded-lg hover:opacity-90 transition-opacity"
-            >
-              Got it!
-            </button>
           </div>
         ) : signupData ? (
-          <ReferralDashboard
-            referralCode={signupData.referral_code}
-            waitlistPosition={signupData.waitlist_position}
-            referralsCount={signupData.referrals_count}
-            onClose={handleClose}
-          />
+          <div className="text-center space-y-4">
+            <div className="text-5xl">🎉</div>
+            <p className="font-heading font-bold text-xl text-primary">You're on the list!</p>
+            <p className="font-body text-sm text-muted">Your position: <span className="font-bold text-foreground">#{signupData.waitlist_position}</span></p>
+            <p className="font-body text-sm text-muted">
+              Create an account to get your personal referral code and link to share with friends!
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => { handleClose(); navigate('/login'); }}
+                className="bg-primary text-primary-foreground font-body font-semibold px-5 py-2.5 rounded-lg hover:opacity-90"
+              >
+                Create Account
+              </button>
+              <button
+                onClick={handleClose}
+                className="bg-muted/20 text-foreground font-body font-medium px-5 py-2.5 rounded-lg hover:bg-muted/30"
+              >
+                Done
+              </button>
+            </div>
+          </div>
         ) : (
           <>
             <h3 className="font-heading font-bold text-xl text-foreground mb-6">Join the GegoBooks Waitlist</h3>
@@ -242,6 +250,20 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Referral Code */}
+              <div>
+                <input
+                  type="text"
+                  placeholder="Referral code (optional)"
+                  value={form.referralCode}
+                  onChange={(e) => setForm({ ...form, referralCode: e.target.value.toUpperCase() })}
+                  className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 bg-surface uppercase"
+                />
+                {form.referralCode && (
+                  <p className="font-body text-xs text-primary mt-1">✓ Referral code will be applied</p>
+                )}
               </div>
 
               <button

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Trophy, Send, Clock, ExternalLink, BookOpen } from 'lucide-react';
+import { Trophy, Send, Clock, ExternalLink, BookOpen, Award, Download } from 'lucide-react';
 
 interface ChallengeDashboardProps {
   user: any;
@@ -29,6 +29,29 @@ type Submission = {
   is_monthly_winner: boolean;
   created_at: string;
   challenge_week_id: string;
+  total_score?: number;
+};
+
+type ChallengeSettings = {
+  coming_soon: boolean;
+  weekly_prize_amount: number;
+  weekly_winner_count: number;
+  monthly_prize_amount: number;
+  monthly_winner_count: number;
+};
+
+type LeaderboardEntry = {
+  user_name: string;
+  approved_submissions: number;
+  weekly_wins: number;
+  monthly_wins: number;
+  avg_score: number;
+};
+
+type ChallengeWeekWithAttachment = {
+  id: string;
+  attachment_url: string | null;
+  attachment_name: string | null;
 };
 
 const platforms = ['instagram', 'facebook', 'linkedin', 'twitter', 'tiktok'];
@@ -39,54 +62,79 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [comingSoon, setComingSoon] = useState(true);
+  const [settings, setSettings] = useState<ChallengeSettings>({
+    coming_soon: true, weekly_prize_amount: 20000, weekly_winner_count: 5,
+    monthly_prize_amount: 100000, monthly_winner_count: 1,
+  });
   const [form, setForm] = useState({ content_url: '', platform: 'instagram', caption: '' });
   const [showForm, setShowForm] = useState(false);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [attachment, setAttachment] = useState<ChallengeWeekWithAttachment | null>(null);
 
   const referralsCount = waitlistData?.referrals_count || 0;
   const isEligible = referralsCount >= 3;
 
+  const fetchSettings = async () => {
+    const { data } = await supabase.rpc('get_challenge_settings');
+    if (data && Array.isArray(data) && data.length > 0) {
+      setSettings(data[0] as ChallengeSettings);
+    }
+  };
+
+  const fetchLeaderboard = async () => {
+    const { data } = await supabase.rpc('get_challenge_leaderboard');
+    if (data) setLeaderboard(data as LeaderboardEntry[]);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
-      const [settingsRes, challengeRes, subsRes] = await Promise.all([
-        supabase.from('challenge_settings' as any).select('coming_soon').eq('id', 'global').single(),
+      const [challengeRes, subsRes] = await Promise.all([
         supabase.rpc('get_active_challenge'),
         supabase.from('challenge_submissions').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
       ]);
-      if (settingsRes.data) setComingSoon((settingsRes.data as any).coming_soon);
+      await fetchSettings();
+      await fetchLeaderboard();
+
       if (challengeRes.data && Array.isArray(challengeRes.data) && challengeRes.data.length > 0) {
-        setChallenge(challengeRes.data[0] as ActiveChallenge);
+        const ch = challengeRes.data[0] as ActiveChallenge;
+        setChallenge(ch);
+        // Fetch attachment for this challenge
+        const { data: weekData } = await supabase.from('challenge_weeks').select('id, attachment_url, attachment_name').eq('id', ch.id).single();
+        if (weekData) setAttachment(weekData as ChallengeWeekWithAttachment);
       }
       if (subsRes.data) setSubmissions(subsRes.data as Submission[]);
       setLoading(false);
     };
     fetchData();
 
-    // Realtime: listen for challenge_settings changes
     const settingsChannel = supabase.channel('challenge-settings-user')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'challenge_settings' }, (payload) => {
-        if ((payload.new as any)?.coming_soon !== undefined) {
-          setComingSoon((payload.new as any).coming_soon);
-        }
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'challenge_settings' }, () => { fetchSettings(); })
       .subscribe();
 
-    // Realtime: listen for challenge_weeks changes
     const weeksChannel = supabase.channel('challenge-weeks-user')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'challenge_weeks' }, async () => {
         const { data } = await supabase.rpc('get_active_challenge');
         if (data && Array.isArray(data) && data.length > 0) {
-          setChallenge(data[0] as ActiveChallenge);
+          const ch = data[0] as ActiveChallenge;
+          setChallenge(ch);
+          const { data: weekData } = await supabase.from('challenge_weeks').select('id, attachment_url, attachment_name').eq('id', ch.id).single();
+          if (weekData) setAttachment(weekData as ChallengeWeekWithAttachment);
         } else {
           setChallenge(null);
+          setAttachment(null);
         }
       })
+      .subscribe();
+
+    const subsChannel = supabase.channel('challenge-leaderboard-user')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'challenge_submissions' }, () => { fetchLeaderboard(); })
       .subscribe();
 
     return () => {
       supabase.removeChannel(settingsChannel);
       supabase.removeChannel(weeksChannel);
+      supabase.removeChannel(subsChannel);
     };
   }, [user.id]);
 
@@ -124,35 +172,26 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
     <div className="bg-surface rounded-xl border border-border p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="font-heading font-bold text-lg text-foreground flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-primary" />
-          Creator Challenge
+          <Trophy className="w-5 h-5 text-primary" /> Creator Challenge
         </h2>
-        <button
-          onClick={() => navigate('/challenge')}
-          className="flex items-center gap-1 font-body text-sm text-primary hover:underline"
-        >
+        <button onClick={() => navigate('/challenge')} className="flex items-center gap-1 font-body text-sm text-primary hover:underline">
           <BookOpen className="w-4 h-4" /> Learn More
         </button>
       </div>
 
-      {comingSoon ? (
+      {settings.coming_soon ? (
         <div className="text-center py-8 space-y-4">
           <div className="inline-flex items-center gap-2 bg-accent/10 text-accent font-body text-sm font-semibold px-4 py-2 rounded-full">
-            <Clock className="w-4 h-4" />
-            Coming Soon
+            <Clock className="w-4 h-4" /> Coming Soon
           </div>
-          <h3 className="font-heading font-bold text-xl text-foreground">
-            The GegoBooks Creator Challenge is launching soon!
-          </h3>
+          <h3 className="font-heading font-bold text-xl text-foreground">The GegoBooks Creator Challenge is launching soon!</h3>
           <p className="font-body text-muted text-sm max-w-md mx-auto">
             A weekly content creation competition with cash prizes. You must be 18+ and have at least 3 referrals to qualify.
           </p>
           <div className="bg-background rounded-xl border border-border p-4 max-w-sm mx-auto">
             <p className="font-body text-sm text-muted mb-2">Your Eligibility</p>
             <div className="flex items-center justify-center gap-2">
-              <span className={`font-heading font-bold text-2xl ${isEligible ? 'text-primary' : 'text-destructive'}`}>
-                {referralsCount}/3
-              </span>
+              <span className={`font-heading font-bold text-2xl ${isEligible ? 'text-primary' : 'text-destructive'}`}>{referralsCount}/3</span>
               <span className="font-body text-sm text-muted">referrals</span>
             </div>
             <div className="w-full bg-border rounded-full h-2 mt-2">
@@ -164,11 +203,11 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
           </div>
           <div className="grid sm:grid-cols-2 gap-3 max-w-md mx-auto pt-2">
             <div className="bg-background rounded-lg border border-border p-3 text-center">
-              <p className="font-heading font-bold text-primary">₦20,000</p>
-              <p className="font-body text-xs text-muted">5 Weekly Winners</p>
+              <p className="font-heading font-bold text-primary">₦{settings.weekly_prize_amount.toLocaleString()}</p>
+              <p className="font-body text-xs text-muted">{settings.weekly_winner_count} Weekly Winner{settings.weekly_winner_count > 1 ? 's' : ''}</p>
             </div>
             <div className="bg-background rounded-lg border border-border p-3 text-center">
-              <p className="font-heading font-bold text-accent">₦100,000</p>
+              <p className="font-heading font-bold text-accent">₦{settings.monthly_prize_amount.toLocaleString()}</p>
               <p className="font-body text-xs text-muted">Monthly Grand Prize</p>
             </div>
           </div>
@@ -185,8 +224,8 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
                   <p className="font-body text-xs text-muted mt-2">Theme: <span className="font-semibold text-foreground">{challenge.theme}</span></p>
                 </div>
                 <div className="text-right">
-                  <p className="font-heading font-bold text-primary text-lg">₦{challenge.prize_amount.toLocaleString()}</p>
-                  <p className="font-body text-xs text-muted">per winner</p>
+                  <p className="font-heading font-bold text-primary text-lg">₦{settings.weekly_prize_amount.toLocaleString()}</p>
+                  <p className="font-body text-xs text-muted">per winner ({settings.weekly_winner_count} winners)</p>
                   <p className="font-body text-xs text-muted mt-1">{challenge.start_date} – {challenge.end_date}</p>
                 </div>
               </div>
@@ -195,6 +234,15 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
                 <p>📊 Scoring: 30% Engagement · 40% Creativity · 30% Theme Clarity</p>
                 <p>⚠️ Must be 18+ to participate</p>
               </div>
+              {/* Downloadable Attachment */}
+              {attachment?.attachment_url && (
+                <div className="mt-3 flex items-center gap-2">
+                  <Download className="w-4 h-4 text-primary" />
+                  <a href={attachment.attachment_url} target="_blank" rel="noopener noreferrer" download className="font-body text-sm text-primary hover:underline font-medium">
+                    Download: {attachment.attachment_name || 'Challenge Assets'}
+                  </a>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-6">
@@ -267,11 +315,45 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
                       <span className={`font-body text-xs px-2 py-0.5 rounded-full capitalize ${
                         s.status === 'approved' ? 'bg-primary/10 text-primary' : s.status === 'rejected' ? 'bg-destructive/10 text-destructive' : 'bg-muted/20 text-muted'
                       }`}>{s.status}</span>
+                      {s.total_score && s.total_score > 0 && <span className="font-body text-xs text-muted">Score: {s.total_score}</span>}
                       {s.is_weekly_winner && <span title="Weekly Winner">🏆</span>}
                       {s.is_monthly_winner && <span title="Monthly Winner">👑</span>}
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Leaderboard */}
+          {leaderboard.length > 0 && (
+            <div>
+              <p className="font-body text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                <Award className="w-4 h-4 text-accent" /> Live Leaderboard — Top 10
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="font-body font-semibold text-left text-muted py-2 px-2">#</th>
+                      <th className="font-body font-semibold text-left text-muted py-2 px-2">Creator</th>
+                      <th className="font-body font-semibold text-center text-muted py-2 px-2">🏆</th>
+                      <th className="font-body font-semibold text-center text-muted py-2 px-2">Score</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboard.map((entry, i) => (
+                      <tr key={entry.user_name} className="border-b border-border/50">
+                        <td className="py-2 px-2 font-heading font-bold text-foreground">
+                          {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                        </td>
+                        <td className="py-2 px-2 font-body text-foreground">{entry.user_name}</td>
+                        <td className="py-2 px-2 text-center font-body text-primary">{entry.weekly_wins}</td>
+                        <td className="py-2 px-2 text-center font-body text-muted">{entry.avg_score}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
