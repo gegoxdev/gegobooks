@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface WaitlistStatus {
@@ -21,18 +21,8 @@ export function useWaitlistStatus(): WaitlistStatus {
   const [isReady, setIsReady] = useState(false);
   const [waitlistData, setWaitlistData] = useState<WaitlistStatus['waitlistData']>(null);
 
-  useEffect(() => {
-    const check = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setIsLoggedIn(false);
-        setIsOnWaitlist(false);
-        setWaitlistData(null);
-        setIsReady(true);
-        return;
-      }
-      setIsLoggedIn(true);
-
+  const fetchWaitlistData = useCallback(async () => {
+    try {
       const { data } = await supabase.rpc('get_my_waitlist_status');
       if (data && Array.isArray(data) && data.length > 0) {
         setIsOnWaitlist(true);
@@ -49,23 +39,62 @@ export function useWaitlistStatus(): WaitlistStatus {
         setIsOnWaitlist(false);
         setWaitlistData(null);
       }
-      setIsReady(true);
+    } catch {
+      setIsOnWaitlist(false);
+      setWaitlistData(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const check = async () => {
+      // Force session refresh to avoid stale tokens
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (!mounted) return;
+      
+      if (!session || error) {
+        setIsLoggedIn(false);
+        setIsOnWaitlist(false);
+        setWaitlistData(null);
+        setIsReady(true);
+        return;
+      }
+      setIsLoggedIn(true);
+      await fetchWaitlistData();
+      if (mounted) setIsReady(true);
     };
 
     check();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
       if (!session) {
         setIsLoggedIn(false);
         setIsOnWaitlist(false);
         setWaitlistData(null);
         setIsReady(true);
       } else {
-        check();
+        setIsLoggedIn(true);
+        await fetchWaitlistData();
+        if (mounted) setIsReady(true);
       }
     });
-    return () => subscription.unsubscribe();
-  }, []);
+
+    // Also listen for profile changes (tier upgrades affect position)
+    const profileChannel = supabase
+      .channel('waitlist-profile-changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, () => {
+        if (mounted) fetchWaitlistData();
+      })
+      .subscribe();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+      supabase.removeChannel(profileChannel);
+    };
+  }, [fetchWaitlistData]);
 
   return { isLoggedIn, isOnWaitlist, isReady, waitlistData };
 }

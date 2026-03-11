@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { Copy, Check } from 'lucide-react';
 
 const milestones = [
-  { count: 3, reward: 'Move up 10 spots', icon: '🚀' },
-  { count: 10, reward: 'Priority access', icon: '⭐' },
-  { count: 25, reward: 'Free 3 months', icon: '🎁' },
+  { count: 3, reward: 'Qualify for Creator Challenge', icon: '🏆' },
+  { count: 5, reward: 'Move up 5 spots', icon: '🚀' },
+  { count: 10, reward: 'Priority recognition', icon: '⭐' },
+  { count: 25, reward: 'Free 3 months on launch', icon: '🎁' },
   { count: 50, reward: 'Founder badge', icon: '👑' },
 ];
 
@@ -15,14 +17,21 @@ interface ReferralDashboardProps {
 }
 
 const ReferralDashboard = ({ referralCode, waitlistPosition, referralsCount, onClose }: ReferralDashboardProps) => {
-  const [copied, setCopied] = useState(false);
-  const referralLink = `https://gegobooks.lovable.app?ref=${referralCode}`;
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const referralLink = `https://gegobooks.lovable.app/login?ref=${referralCode}`;
   const shareText = `I just joined the GegoBooks waitlist — the AI accounting assistant for African businesses! Join me: ${referralLink}`;
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const copyCode = async () => {
+    await navigator.clipboard.writeText(referralCode);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
   };
 
   return (
@@ -31,11 +40,28 @@ const ReferralDashboard = ({ referralCode, waitlistPosition, referralsCount, onC
       <div>
         <p className="font-heading font-bold text-xl text-primary">You're on the list!</p>
         <p className="font-body text-sm text-muted mt-1">Your position: <span className="font-bold text-foreground">#{waitlistPosition}</span></p>
+        <p className="font-body text-xs text-muted mt-1">Each referral moves you up 1 spot. Paid tiers rank higher automatically.</p>
       </div>
 
-      {/* Referral link */}
+      {/* Referral Code */}
       <div className="bg-soft-white rounded-xl p-4 border border-border">
-        <p className="font-body text-sm text-muted mb-2">Share & move up the list</p>
+        <p className="font-body text-sm text-muted mb-2">Your Referral Code</p>
+        <div className="flex items-center gap-2 justify-center">
+          <code className="font-body text-lg font-bold text-foreground bg-surface border border-border rounded-lg px-4 py-2">
+            {referralCode}
+          </code>
+          <button
+            onClick={copyCode}
+            className="bg-primary/10 text-primary font-body text-xs font-semibold px-3 py-2 rounded-lg hover:bg-primary/20 transition-colors flex items-center gap-1"
+          >
+            {copiedCode ? <><Check className="w-3 h-3" /> Copied!</> : <><Copy className="w-3 h-3" /> Copy Code</>}
+          </button>
+        </div>
+      </div>
+
+      {/* Referral Link */}
+      <div className="bg-soft-white rounded-xl p-4 border border-border">
+        <p className="font-body text-sm text-muted mb-2">Your Referral Link</p>
         <div className="flex items-center gap-2">
           <input
             readOnly
@@ -44,15 +70,15 @@ const ReferralDashboard = ({ referralCode, waitlistPosition, referralsCount, onC
           />
           <button
             onClick={copyLink}
-            className="bg-primary text-primary-foreground font-body text-xs font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap"
+            className="bg-primary text-primary-foreground font-body text-xs font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap flex items-center gap-1"
           >
-            {copied ? 'Copied!' : 'Copy'}
+            {copiedLink ? <><Check className="w-3 h-3" /> Copied!</> : <><Copy className="w-3 h-3" /> Copy Link</>}
           </button>
         </div>
       </div>
 
       {/* Share buttons */}
-      <div className="flex justify-center gap-3">
+      <div className="flex justify-center gap-3 flex-wrap">
         <a
           href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
           target="_blank"

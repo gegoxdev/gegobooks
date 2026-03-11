@@ -19,7 +19,7 @@ import WebsiteAnalytics from '@/components/admin/WebsiteAnalytics';
 import ChallengeManagement from '@/components/admin/ChallengeManagement';
 import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 
-type AdminRole = 'readonly' | 'approver' | 'admin' | 'master';
+type AdminRole = 'readonly' | 'approver' | 'admin' | 'master' | 'challenge_admin';
 
 const Admin = () => {
   useInactivityTimeout();
@@ -62,7 +62,6 @@ const Admin = () => {
     setAuthed(false);
   };
 
-  // Viewer mode — no auth required
   if (viewerToken) {
     return <ViewerDashboard token={viewerToken} />;
   }
@@ -81,6 +80,20 @@ const Admin = () => {
 
   const isReadOnly = adminRole === 'readonly';
   const isMaster = adminRole === 'master';
+  const isChallengeAdmin = adminRole === 'challenge_admin';
+  const canManageChallenge = isMaster || isChallengeAdmin;
+
+  // Challenge admin only sees the challenge section
+  if (isChallengeAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AdminHeader onSignOut={handleSignOut} />
+        <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+          <ChallengeManagement isReadOnly={false} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -88,7 +101,7 @@ const Admin = () => {
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         {(isMaster || adminRole === 'approver') && <AdminManagement currentRole={adminRole} />}
         {isMaster && <ViewerLinkManager />}
-        <ChallengeManagement isReadOnly={isReadOnly} />
+        {canManageChallenge && <ChallengeManagement isReadOnly={isReadOnly} />}
         <WebsiteAnalytics />
         <AfricaMap />
         <UserAccountStats isReadOnly={isReadOnly} />
