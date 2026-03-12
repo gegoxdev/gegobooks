@@ -429,6 +429,9 @@ export type Database = {
       }
       waitlist_signups: {
         Row: {
+          business_name: string | null
+          business_registered: boolean | null
+          business_type: string | null
           created_at: string
           email: string
           full_name: string
@@ -444,6 +447,9 @@ export type Database = {
           waitlist_position: number | null
         }
         Insert: {
+          business_name?: string | null
+          business_registered?: boolean | null
+          business_type?: string | null
           created_at?: string
           email: string
           full_name: string
@@ -459,6 +465,9 @@ export type Database = {
           waitlist_position?: number | null
         }
         Update: {
+          business_name?: string | null
+          business_registered?: boolean | null
+          business_type?: string | null
           created_at?: string
           email?: string
           full_name?: string
@@ -892,6 +901,7 @@ export type Database = {
         Returns: undefined
       }
       upgrade_tier: { Args: { new_tier: string }; Returns: undefined }
+      validate_referral_code: { Args: { p_code: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
