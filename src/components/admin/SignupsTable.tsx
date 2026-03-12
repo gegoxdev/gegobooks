@@ -15,6 +15,10 @@ interface Signup {
   created_at: string;
   utm_source: string | null;
   tier: string;
+  business_name: string | null;
+  business_type: string | null;
+  business_registered: boolean | null;
+  signup_source: string | null;
 }
 
 type SortKey = 'created_at' | 'waitlist_position' | 'referrals_count' | 'full_name';
