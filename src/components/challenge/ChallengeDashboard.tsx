@@ -208,7 +208,7 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
             </div>
             <div className="bg-background rounded-lg border border-border p-3 text-center">
               <p className="font-heading font-bold text-accent">₦{settings.monthly_prize_amount.toLocaleString()}</p>
-              <p className="font-body text-xs text-muted">Monthly Grand Prize</p>
+              <p className="font-body text-xs text-muted">{settings.monthly_winner_count} Monthly Winner{settings.monthly_winner_count > 1 ? 's' : ''}</p>
             </div>
           </div>
         </div>

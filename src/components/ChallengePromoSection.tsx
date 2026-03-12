@@ -67,7 +67,7 @@ const ChallengePromoSection = () => {
               <div className="bg-surface rounded-xl border border-border p-5 text-center">
                 <p className="text-3xl mb-1">👑</p>
                 <p className="font-heading font-bold text-accent text-lg">₦{settings.monthly_prize_amount.toLocaleString()}</p>
-                <p className="font-body text-xs text-muted">Monthly Grand Prize</p>
+                <p className="font-body text-xs text-muted">{settings.monthly_winner_count} Monthly Winner{settings.monthly_winner_count > 1 ? 's' : ''}</p>
               </div>
               <div className="bg-surface rounded-xl border border-border p-5 text-center">
                 <p className="text-3xl mb-1">⭐</p>
