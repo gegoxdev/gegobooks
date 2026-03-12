@@ -54,6 +54,17 @@ type ChallengeWeekWithAttachment = {
   attachment_name: string | null;
 };
 
+const parseAttachments = (url: string | null, name: string | null): { url: string; name: string }[] => {
+  if (!url) return [];
+  try {
+    const urls = JSON.parse(url) as string[];
+    const names = name ? JSON.parse(name) as string[] : [];
+    return urls.map((u, i) => ({ url: u, name: names[i] || 'Download' }));
+  } catch {
+    return [{ url, name: name || 'Challenge Assets' }];
+  }
+};
+
 const platforms = ['instagram', 'facebook', 'linkedin', 'twitter', 'tiktok'];
 
 const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => {
@@ -234,13 +245,17 @@ const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => 
                 <p>📊 Scoring: 30% Engagement · 40% Creativity · 30% Theme Clarity</p>
                 <p>⚠️ Must be 18+ to participate</p>
               </div>
-              {/* Downloadable Attachment */}
+              {/* Downloadable Attachments */}
               {attachment?.attachment_url && (
-                <div className="mt-3 flex items-center gap-2">
-                  <Download className="w-4 h-4 text-primary" />
-                  <a href={attachment.attachment_url} target="_blank" rel="noopener noreferrer" download className="font-body text-sm text-primary hover:underline font-medium">
-                    Download: {attachment.attachment_name || 'Challenge Assets'}
-                  </a>
+                <div className="mt-3 space-y-1">
+                  {parseAttachments(attachment.attachment_url, attachment.attachment_name).map((att, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <Download className="w-4 h-4 text-primary" />
+                      <a href={att.url} target="_blank" rel="noopener noreferrer" className="font-body text-sm text-primary hover:underline font-medium">
+                        Download: {att.name}
+                      </a>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

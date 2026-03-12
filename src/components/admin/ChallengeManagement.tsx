@@ -60,7 +60,7 @@ const ChallengeManagement = ({ isReadOnly }: { isReadOnly: boolean }) => {
     coming_soon: true, weekly_prize_amount: 20000, weekly_winner_count: 5,
     monthly_prize_amount: 100000, monthly_winner_count: 1,
   });
-  const [form, setForm] = useState({ title: '', description: '', theme: '', start_date: '', end_date: '', prize_amount: 20000, status: 'draft', attachment_url: '', attachment_name: '' });
+  const [form, setForm] = useState({ title: '', description: '', theme: '', start_date: '', end_date: '', prize_amount: 20000, status: 'draft', attachments: [{ url: '', name: '' }] as { url: string; name: string }[] });
   const [monthlyView, setMonthlyView] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -130,16 +130,34 @@ const ChallengeManagement = ({ isReadOnly }: { isReadOnly: boolean }) => {
     setShowSettings(false);
   };
 
+  const serializeAttachments = (atts: { url: string; name: string }[]) => {
+    const filtered = atts.filter(a => a.url.trim());
+    if (filtered.length === 0) return { attachment_url: null, attachment_name: null };
+    if (filtered.length === 1) return { attachment_url: filtered[0].url, attachment_name: filtered[0].name || null };
+    return { attachment_url: JSON.stringify(filtered.map(a => a.url)), attachment_name: JSON.stringify(filtered.map(a => a.name)) };
+  };
+
+  const parseAttachments = (url: string | null, name: string | null): { url: string; name: string }[] => {
+    if (!url) return [{ url: '', name: '' }];
+    try {
+      const urls = JSON.parse(url) as string[];
+      const names = name ? JSON.parse(name) as string[] : [];
+      return urls.map((u, i) => ({ url: u, name: names[i] || '' }));
+    } catch {
+      return [{ url, name: name || '' }];
+    }
+  };
+
   const handleCreateOrUpdateWeek = async () => {
     if (!form.title || !form.theme || !form.start_date || !form.end_date) {
       toast.error('Fill all required fields'); return;
     }
+    const { attachment_url, attachment_name } = serializeAttachments(form.attachments);
     if (editingWeek) {
       const { error } = await supabase.from('challenge_weeks').update({
         title: form.title, description: form.description || null, theme: form.theme,
         start_date: form.start_date, end_date: form.end_date, prize_amount: form.prize_amount,
-        status: form.status, attachment_url: form.attachment_url || null,
-        attachment_name: form.attachment_name || null, updated_at: new Date().toISOString(),
+        status: form.status, attachment_url, attachment_name, updated_at: new Date().toISOString(),
       }).eq('id', editingWeek);
       if (error) { toast.error(error.message); return; }
       toast.success('Challenge updated!');
@@ -150,14 +168,13 @@ const ChallengeManagement = ({ isReadOnly }: { isReadOnly: boolean }) => {
       const { error } = await supabase.from('challenge_weeks').insert({
         title: form.title, description: form.description || null, theme: form.theme,
         start_date: form.start_date, end_date: form.end_date, prize_amount: form.prize_amount,
-        status: form.status, created_by: session.user.id,
-        attachment_url: form.attachment_url || null, attachment_name: form.attachment_name || null,
+        status: form.status, created_by: session.user.id, attachment_url, attachment_name,
       });
       if (error) { toast.error(error.message); return; }
       toast.success('Challenge week created!');
     }
     setShowForm(false);
-    setForm({ title: '', description: '', theme: '', start_date: '', end_date: '', prize_amount: 20000, status: 'draft', attachment_url: '', attachment_name: '' });
+    setForm({ title: '', description: '', theme: '', start_date: '', end_date: '', prize_amount: 20000, status: 'draft', attachments: [{ url: '', name: '' }] });
     fetchWeeks();
   };
 
@@ -165,7 +182,7 @@ const ChallengeManagement = ({ isReadOnly }: { isReadOnly: boolean }) => {
     setForm({
       title: w.title, description: w.description || '', theme: w.theme,
       start_date: w.start_date, end_date: w.end_date, prize_amount: w.prize_amount,
-      status: w.status, attachment_url: w.attachment_url || '', attachment_name: w.attachment_name || '',
+      status: w.status, attachments: parseAttachments(w.attachment_url, w.attachment_name),
     });
     setEditingWeek(w.id);
     setShowForm(true);
@@ -260,7 +277,7 @@ const ChallengeManagement = ({ isReadOnly }: { isReadOnly: boolean }) => {
             <Crown className="w-4 h-4" /> Monthly Winner
           </button>
           {!isReadOnly && (
-            <button onClick={() => { setShowForm(!showForm); setEditingWeek(null); setForm({ title: '', description: '', theme: '', start_date: '', end_date: '', prize_amount: settings.weekly_prize_amount, status: 'draft', attachment_url: '', attachment_name: '' }); }} className="bg-primary text-primary-foreground font-body text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 flex items-center gap-1">
+            <button onClick={() => { setShowForm(!showForm); setEditingWeek(null); setForm({ title: '', description: '', theme: '', start_date: '', end_date: '', prize_amount: settings.weekly_prize_amount, status: 'draft', attachments: [{ url: '', name: '' }] }); }} className="bg-primary text-primary-foreground font-body text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 flex items-center gap-1">
               <Plus className="w-4 h-4" /> New Week
             </button>
           )}
@@ -370,15 +387,26 @@ const ChallengeManagement = ({ isReadOnly }: { isReadOnly: boolean }) => {
             </select>
           </div>
           <textarea placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full font-body text-sm border border-border rounded-lg px-3 py-2 bg-surface text-foreground" rows={2} />
-          <div className="grid md:grid-cols-2 gap-3">
-            <div>
-              <label className="font-body text-xs text-muted">Downloadable File URL (for contestants)</label>
-              <input placeholder="https://drive.google.com/..." value={form.attachment_url} onChange={e => setForm({ ...form, attachment_url: e.target.value })} className="w-full font-body text-sm border border-border rounded-lg px-3 py-2 bg-surface text-foreground" />
-            </div>
-            <div>
-              <label className="font-body text-xs text-muted">File Name (e.g. "GegoBooks Logo Pack")</label>
-              <input placeholder="GegoBooks Logo Pack" value={form.attachment_name} onChange={e => setForm({ ...form, attachment_name: e.target.value })} className="w-full font-body text-sm border border-border rounded-lg px-3 py-2 bg-surface text-foreground" />
-            </div>
+          <div className="space-y-2">
+            <label className="font-body text-xs text-muted font-semibold">Downloadable Files (Google Drive links for contestants)</label>
+            {form.attachments.map((att, idx) => (
+              <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                <input placeholder="https://drive.google.com/..." value={att.url} onChange={e => {
+                  const updated = [...form.attachments]; updated[idx] = { ...updated[idx], url: e.target.value }; setForm({ ...form, attachments: updated });
+                }} className="w-full font-body text-sm border border-border rounded-lg px-3 py-2 bg-surface text-foreground" />
+                <input placeholder="File name (e.g. GegoBooks Logo)" value={att.name} onChange={e => {
+                  const updated = [...form.attachments]; updated[idx] = { ...updated[idx], name: e.target.value }; setForm({ ...form, attachments: updated });
+                }} className="w-full font-body text-sm border border-border rounded-lg px-3 py-2 bg-surface text-foreground" />
+                {form.attachments.length > 1 && (
+                  <button onClick={() => setForm({ ...form, attachments: form.attachments.filter((_, i) => i !== idx) })} className="text-destructive hover:opacity-70" title="Remove">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+            <button onClick={() => setForm({ ...form, attachments: [...form.attachments, { url: '', name: '' }] })} className="flex items-center gap-1 font-body text-xs text-primary hover:underline font-semibold">
+              <Plus className="w-3 h-3" /> Add another file
+            </button>
           </div>
           <div className="flex gap-2">
             <button onClick={handleCreateOrUpdateWeek} className="bg-primary text-primary-foreground font-body text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90">

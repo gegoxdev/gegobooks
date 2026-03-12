@@ -790,6 +790,9 @@ export type Database = {
       get_admin_signups_with_tiers: {
         Args: never
         Returns: {
+          business_name: string
+          business_registered: boolean
+          business_type: string
           created_at: string
           email: string
           full_name: string
@@ -797,6 +800,7 @@ export type Database = {
           referral_code: string
           referrals_count: number
           referred_by: string
+          signup_source: string
           tier: string
           user_type: string
           utm_source: string

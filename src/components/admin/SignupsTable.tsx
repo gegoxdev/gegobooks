@@ -15,6 +15,10 @@ interface Signup {
   created_at: string;
   utm_source: string | null;
   tier: string;
+  business_name: string | null;
+  business_type: string | null;
+  business_registered: boolean | null;
+  signup_source: string | null;
 }
 
 type SortKey = 'created_at' | 'waitlist_position' | 'referrals_count' | 'full_name';
@@ -151,10 +155,12 @@ const SignupsTable = ({ isReadOnly = false }: { isReadOnly?: boolean }) => {
   }, {});
 
   const exportCSV = () => {
-    const headers = ['Name', 'Email', 'Type', 'Tier', 'Referral Code', 'Referrals', 'Position', 'Referred By', 'UTM Source', 'Signed Up'];
+    const headers = ['Name', 'Email', 'Type', 'Tier', 'Referral Code', 'Referrals', 'Position', 'Referred By', 'UTM Source', 'Signup Source', 'Business Name', 'Business Type', 'Business Registered', 'Signed Up'];
     const rows = filtered.map((s) => [
       s.full_name, s.email, s.user_type, s.tier, s.referral_code || '', s.referrals_count,
-      s.waitlist_position || '', s.referred_by || '', s.utm_source || '', new Date(s.created_at).toLocaleDateString(),
+      s.waitlist_position || '', s.referred_by || '', s.utm_source || '', s.signup_source || '',
+      s.business_name || '', s.business_type || '', s.business_registered != null ? (s.business_registered ? 'Yes' : 'No') : '',
+      new Date(s.created_at).toLocaleDateString(),
     ]);
     const csv = [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -169,7 +175,7 @@ const SignupsTable = ({ isReadOnly = false }: { isReadOnly?: boolean }) => {
   const columns: [string, string][] = [
     ['full_name', 'Name'], ['', 'Email'], ['', 'Type'], ['', 'Tier'], ['', 'Code'],
     ['referrals_count', 'Referrals'], ['waitlist_position', 'Position'],
-    ['', 'Referred By'], ['created_at', 'Date'], ...(isReadOnly ? [] : [['', ''] as [string, string]]),
+    ['', 'Referred By'], ['', 'Source'], ['', 'Business'], ['created_at', 'Date'], ...(isReadOnly ? [] : [['', ''] as [string, string]]),
   ];
 
   const tierFilterOptions = [
@@ -246,6 +252,22 @@ const SignupsTable = ({ isReadOnly = false }: { isReadOnly?: boolean }) => {
                   <td className="font-body text-sm text-foreground py-3 px-2 font-bold">{s.referrals_count}</td>
                   <td className="font-body text-sm text-muted py-3 px-2">#{s.waitlist_position}</td>
                   <td className="font-body text-xs text-muted py-3 px-2 font-mono">{s.referred_by || '—'}</td>
+                  <td className="font-body text-xs text-muted py-3 px-2 capitalize">{s.signup_source || 'direct'}</td>
+                  <td className="py-3 px-2">
+                    {s.business_name ? (
+                      <div>
+                        <p className="font-body text-xs text-foreground">{s.business_name}</p>
+                        {s.business_type && <p className="font-body text-[10px] text-muted">{s.business_type}</p>}
+                        {s.business_registered != null && (
+                          <span className={`font-body text-[10px] ${s.business_registered ? 'text-primary' : 'text-muted'}`}>
+                            {s.business_registered ? 'Registered' : 'Unregistered'}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="font-body text-xs text-muted">—</span>
+                    )}
+                  </td>
                   <td className="font-body text-xs text-muted py-3 px-2">{new Date(s.created_at).toLocaleDateString()}</td>
                   {!isReadOnly && (
                     <td className="py-3 px-2">
