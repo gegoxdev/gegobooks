@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import ReferralDashboard from './ReferralDashboard';
 import { CheckCircle } from 'lucide-react';
 
 const userTypes = [
@@ -9,6 +8,15 @@ const userTypes = [
   { value: 'accountant', label: 'Accountant' },
   { value: 'both', label: 'Both' },
 ] as const;
+
+const businessTypes = [
+  'Business Name',
+  'Private Limited Company (Ltd)',
+  'Public Limited Company (PLC)',
+  'Company Limited by Guarantee (Ltd/Gte)',
+  'Unlimited Liability Company (ULtd)',
+  'Incorporated Trustees',
+];
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -29,7 +37,10 @@ interface SignupModalProps {
 
 const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModalProps) => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ fullName: '', email: '', userType: 'user', referralCode: utmParams.ref || '' });
+  const [form, setForm] = useState({
+    fullName: '', email: '', userType: 'user', referralCode: utmParams.ref || '',
+    businessRegistered: null as boolean | null, businessName: '', businessType: '',
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [signupData, setSignupData] = useState<{
@@ -37,6 +48,26 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
     waitlist_position: number;
     referrals_count: number;
   } | null>(null);
+  const [referralValid, setReferralValid] = useState<boolean | null>(null);
+  const [referralChecking, setReferralChecking] = useState(false);
+
+  const showBusinessFields = form.userType === 'user' || form.userType === 'both';
+
+  // Debounced referral code validation
+  useEffect(() => {
+    const code = form.referralCode.trim();
+    if (!code) { setReferralValid(null); return; }
+    if (code.length < 3) { setReferralValid(null); return; }
+
+    const timer = setTimeout(async () => {
+      setReferralChecking(true);
+      const { data, error } = await supabase.rpc('validate_referral_code', { p_code: code });
+      if (!error) setReferralValid(data as boolean);
+      setReferralChecking(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [form.referralCode]);
 
   if (!isOpen) return null;
 
@@ -49,6 +80,12 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
     if (!form.email.trim()) errs.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Invalid email';
     if (form.email.length > 255) errs.email = 'Email is too long';
+    if (form.referralCode.trim() && referralValid === false) {
+      errs.referralCode = 'Invalid referral code';
+    }
+    if (showBusinessFields && form.businessRegistered !== null && form.businessRegistered && !form.businessType) {
+      errs.businessType = 'Please select your business type';
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -90,6 +127,9 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
           utm_medium: utmParams.utm_medium || null,
           utm_campaign: utmParams.utm_campaign || null,
           signup_source: signupSource,
+          business_registered: showBusinessFields ? form.businessRegistered : null,
+          business_name: showBusinessFields && form.businessName.trim() ? form.businessName.trim() : null,
+          business_type: showBusinessFields && form.businessRegistered ? form.businessType || null : null,
         } as any);
 
       if (error) {
@@ -123,7 +163,8 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
   const handleClose = () => {
     setSignupData(null);
     setErrors({});
-    setForm({ fullName: '', email: '', userType: 'user', referralCode: '' });
+    setForm({ fullName: '', email: '', userType: 'user', referralCode: '', businessRegistered: null, businessName: '', businessType: '' });
+    setReferralValid(null);
     onClose();
   };
 
@@ -239,7 +280,7 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
                     <button
                       key={t.value}
                       type="button"
-                      onClick={() => setForm({ ...form, userType: t.value })}
+                      onClick={() => setForm({ ...form, userType: t.value, businessRegistered: null, businessName: '', businessType: '' })}
                       className={`flex-1 font-body text-sm py-2.5 transition-colors ${
                         form.userType === t.value
                           ? 'bg-primary text-primary-foreground font-semibold'
@@ -252,6 +293,68 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
                 </div>
               </div>
 
+              {/* Business Info Section */}
+              {showBusinessFields && (
+                <div className="space-y-3 bg-background rounded-lg border border-border p-4">
+                  <p className="font-body text-sm font-semibold text-foreground">Business Information</p>
+                  
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Business name"
+                      value={form.businessName}
+                      onChange={(e) => setForm({ ...form, businessName: e.target.value })}
+                      className="w-full font-body border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 bg-surface"
+                    />
+                  </div>
+
+                  <div>
+                    <p className="font-body text-sm text-muted mb-2">Is your business registered?</p>
+                    <div className="flex rounded-lg border border-border overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, businessRegistered: true })}
+                        className={`flex-1 font-body text-sm py-2 transition-colors ${
+                          form.businessRegistered === true
+                            ? 'bg-primary text-primary-foreground font-semibold'
+                            : 'bg-surface text-muted hover:bg-muted/10'
+                        }`}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, businessRegistered: false, businessType: '' })}
+                        className={`flex-1 font-body text-sm py-2 transition-colors ${
+                          form.businessRegistered === false
+                            ? 'bg-primary text-primary-foreground font-semibold'
+                            : 'bg-surface text-muted hover:bg-muted/10'
+                        }`}
+                      >
+                        No
+                      </button>
+                    </div>
+                  </div>
+
+                  {form.businessRegistered === true && (
+                    <div>
+                      <p className="font-body text-sm text-muted mb-2">Business type (CAC)</p>
+                      <select
+                        value={form.businessType}
+                        onChange={(e) => setForm({ ...form, businessType: e.target.value })}
+                        className="w-full font-body border border-border rounded-lg px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 bg-surface"
+                      >
+                        <option value="">Select business type</option>
+                        {businessTypes.map((bt) => (
+                          <option key={bt} value={bt}>{bt}</option>
+                        ))}
+                      </select>
+                      {errors.businessType && <p className="text-destructive text-xs mt-1 font-body">{errors.businessType}</p>}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Referral Code */}
               <div>
                 <input
@@ -261,9 +364,16 @@ const SignupModal = ({ isOpen, onClose, utmParams, waitlistStatus }: SignupModal
                   onChange={(e) => setForm({ ...form, referralCode: e.target.value.toUpperCase() })}
                   className="w-full font-body border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 bg-surface uppercase"
                 />
-                {form.referralCode && (
-                  <p className="font-body text-xs text-primary mt-1">✓ Referral code will be applied</p>
+                {referralChecking && (
+                  <p className="font-body text-xs text-muted mt-1">Checking referral code...</p>
                 )}
+                {!referralChecking && form.referralCode.trim() && referralValid === true && (
+                  <p className="font-body text-xs text-primary mt-1">✓ Valid referral code</p>
+                )}
+                {!referralChecking && form.referralCode.trim() && referralValid === false && (
+                  <p className="font-body text-xs text-destructive mt-1">✗ Invalid referral code</p>
+                )}
+                {errors.referralCode && <p className="text-destructive text-xs mt-1 font-body">{errors.referralCode}</p>}
               </div>
 
               <button
