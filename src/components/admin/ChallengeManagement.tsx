@@ -277,7 +277,7 @@ const ChallengeManagement = ({ isReadOnly }: { isReadOnly: boolean }) => {
             <Crown className="w-4 h-4" /> Monthly Winner
           </button>
           {!isReadOnly && (
-            <button onClick={() => { setShowForm(!showForm); setEditingWeek(null); setForm({ title: '', description: '', theme: '', start_date: '', end_date: '', prize_amount: settings.weekly_prize_amount, status: 'draft', attachment_url: '', attachment_name: '' }); }} className="bg-primary text-primary-foreground font-body text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 flex items-center gap-1">
+            <button onClick={() => { setShowForm(!showForm); setEditingWeek(null); setForm({ title: '', description: '', theme: '', start_date: '', end_date: '', prize_amount: settings.weekly_prize_amount, status: 'draft', attachments: [{ url: '', name: '' }] }); }} className="bg-primary text-primary-foreground font-body text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 flex items-center gap-1">
               <Plus className="w-4 h-4" /> New Week
             </button>
           )}
