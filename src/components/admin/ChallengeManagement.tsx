@@ -130,16 +130,34 @@ const ChallengeManagement = ({ isReadOnly }: { isReadOnly: boolean }) => {
     setShowSettings(false);
   };
 
+  const serializeAttachments = (atts: { url: string; name: string }[]) => {
+    const filtered = atts.filter(a => a.url.trim());
+    if (filtered.length === 0) return { attachment_url: null, attachment_name: null };
+    if (filtered.length === 1) return { attachment_url: filtered[0].url, attachment_name: filtered[0].name || null };
+    return { attachment_url: JSON.stringify(filtered.map(a => a.url)), attachment_name: JSON.stringify(filtered.map(a => a.name)) };
+  };
+
+  const parseAttachments = (url: string | null, name: string | null): { url: string; name: string }[] => {
+    if (!url) return [{ url: '', name: '' }];
+    try {
+      const urls = JSON.parse(url) as string[];
+      const names = name ? JSON.parse(name) as string[] : [];
+      return urls.map((u, i) => ({ url: u, name: names[i] || '' }));
+    } catch {
+      return [{ url, name: name || '' }];
+    }
+  };
+
   const handleCreateOrUpdateWeek = async () => {
     if (!form.title || !form.theme || !form.start_date || !form.end_date) {
       toast.error('Fill all required fields'); return;
     }
+    const { attachment_url, attachment_name } = serializeAttachments(form.attachments);
     if (editingWeek) {
       const { error } = await supabase.from('challenge_weeks').update({
         title: form.title, description: form.description || null, theme: form.theme,
         start_date: form.start_date, end_date: form.end_date, prize_amount: form.prize_amount,
-        status: form.status, attachment_url: form.attachment_url || null,
-        attachment_name: form.attachment_name || null, updated_at: new Date().toISOString(),
+        status: form.status, attachment_url, attachment_name, updated_at: new Date().toISOString(),
       }).eq('id', editingWeek);
       if (error) { toast.error(error.message); return; }
       toast.success('Challenge updated!');
@@ -150,14 +168,13 @@ const ChallengeManagement = ({ isReadOnly }: { isReadOnly: boolean }) => {
       const { error } = await supabase.from('challenge_weeks').insert({
         title: form.title, description: form.description || null, theme: form.theme,
         start_date: form.start_date, end_date: form.end_date, prize_amount: form.prize_amount,
-        status: form.status, created_by: session.user.id,
-        attachment_url: form.attachment_url || null, attachment_name: form.attachment_name || null,
+        status: form.status, created_by: session.user.id, attachment_url, attachment_name,
       });
       if (error) { toast.error(error.message); return; }
       toast.success('Challenge week created!');
     }
     setShowForm(false);
-    setForm({ title: '', description: '', theme: '', start_date: '', end_date: '', prize_amount: 20000, status: 'draft', attachment_url: '', attachment_name: '' });
+    setForm({ title: '', description: '', theme: '', start_date: '', end_date: '', prize_amount: 20000, status: 'draft', attachments: [{ url: '', name: '' }] });
     fetchWeeks();
   };
 
