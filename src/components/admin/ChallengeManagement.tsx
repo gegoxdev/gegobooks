@@ -182,7 +182,7 @@ const ChallengeManagement = ({ isReadOnly }: { isReadOnly: boolean }) => {
     setForm({
       title: w.title, description: w.description || '', theme: w.theme,
       start_date: w.start_date, end_date: w.end_date, prize_amount: w.prize_amount,
-      status: w.status, attachment_url: w.attachment_url || '', attachment_name: w.attachment_name || '',
+      status: w.status, attachments: parseAttachments(w.attachment_url, w.attachment_name),
     });
     setEditingWeek(w.id);
     setShowForm(true);
