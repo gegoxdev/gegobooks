@@ -54,6 +54,17 @@ type ChallengeWeekWithAttachment = {
   attachment_name: string | null;
 };
 
+const parseAttachments = (url: string | null, name: string | null): { url: string; name: string }[] => {
+  if (!url) return [];
+  try {
+    const urls = JSON.parse(url) as string[];
+    const names = name ? JSON.parse(name) as string[] : [];
+    return urls.map((u, i) => ({ url: u, name: names[i] || 'Download' }));
+  } catch {
+    return [{ url, name: name || 'Challenge Assets' }];
+  }
+};
+
 const platforms = ['instagram', 'facebook', 'linkedin', 'twitter', 'tiktok'];
 
 const ChallengeDashboard = ({ user, waitlistData }: ChallengeDashboardProps) => {
