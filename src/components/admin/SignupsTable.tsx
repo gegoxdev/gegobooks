@@ -252,6 +252,22 @@ const SignupsTable = ({ isReadOnly = false }: { isReadOnly?: boolean }) => {
                   <td className="font-body text-sm text-foreground py-3 px-2 font-bold">{s.referrals_count}</td>
                   <td className="font-body text-sm text-muted py-3 px-2">#{s.waitlist_position}</td>
                   <td className="font-body text-xs text-muted py-3 px-2 font-mono">{s.referred_by || '—'}</td>
+                  <td className="font-body text-xs text-muted py-3 px-2 capitalize">{s.signup_source || 'direct'}</td>
+                  <td className="py-3 px-2">
+                    {s.business_name ? (
+                      <div>
+                        <p className="font-body text-xs text-foreground">{s.business_name}</p>
+                        {s.business_type && <p className="font-body text-[10px] text-muted">{s.business_type}</p>}
+                        {s.business_registered != null && (
+                          <span className={`font-body text-[10px] ${s.business_registered ? 'text-primary' : 'text-muted'}`}>
+                            {s.business_registered ? 'Registered' : 'Unregistered'}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="font-body text-xs text-muted">—</span>
+                    )}
+                  </td>
                   <td className="font-body text-xs text-muted py-3 px-2">{new Date(s.created_at).toLocaleDateString()}</td>
                   {!isReadOnly && (
                     <td className="py-3 px-2">

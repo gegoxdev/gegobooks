@@ -60,7 +60,7 @@ const ChallengeManagement = ({ isReadOnly }: { isReadOnly: boolean }) => {
     coming_soon: true, weekly_prize_amount: 20000, weekly_winner_count: 5,
     monthly_prize_amount: 100000, monthly_winner_count: 1,
   });
-  const [form, setForm] = useState({ title: '', description: '', theme: '', start_date: '', end_date: '', prize_amount: 20000, status: 'draft', attachment_url: '', attachment_name: '' });
+  const [form, setForm] = useState({ title: '', description: '', theme: '', start_date: '', end_date: '', prize_amount: 20000, status: 'draft', attachments: [{ url: '', name: '' }] as { url: string; name: string }[] });
   const [monthlyView, setMonthlyView] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => {
