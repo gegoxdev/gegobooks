@@ -79,7 +79,7 @@ const Challenge = () => {
 
   const prizes = [
     { icon: '🏆', title: `${settings.weekly_winner_count} Weekly Winner${settings.weekly_winner_count > 1 ? 's' : ''}`, amount: `₦${settings.weekly_prize_amount.toLocaleString()} each`, desc: 'Top content creators every week' },
-    { icon: '👑', title: `Monthly Grand Prize`, amount: `₦${settings.monthly_prize_amount.toLocaleString()}`, desc: 'Best content of the month' },
+    { icon: '👑', title: `${settings.monthly_winner_count} Monthly Winner${settings.monthly_winner_count > 1 ? 's' : ''}`, amount: `₦${settings.monthly_prize_amount.toLocaleString()}${settings.monthly_winner_count > 1 ? ' each' : ''}`, desc: 'Best content of the month' },
     { icon: '⭐', title: 'Creator of the Week', amount: 'Badge + Feature', desc: 'Highlighted on the platform' },
     { icon: '🎖️', title: 'Creator of the Month', amount: 'Badge + Feature', desc: 'Ultimate recognition' },
   ];
