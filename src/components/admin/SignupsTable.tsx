@@ -175,7 +175,7 @@ const SignupsTable = ({ isReadOnly = false }: { isReadOnly?: boolean }) => {
   const columns: [string, string][] = [
     ['full_name', 'Name'], ['', 'Email'], ['', 'Type'], ['', 'Tier'], ['', 'Code'],
     ['referrals_count', 'Referrals'], ['waitlist_position', 'Position'],
-    ['', 'Referred By'], ['created_at', 'Date'], ...(isReadOnly ? [] : [['', ''] as [string, string]]),
+    ['', 'Referred By'], ['', 'Source'], ['', 'Business'], ['created_at', 'Date'], ...(isReadOnly ? [] : [['', ''] as [string, string]]),
   ];
 
   const tierFilterOptions = [
