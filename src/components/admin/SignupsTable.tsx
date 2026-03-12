@@ -155,10 +155,12 @@ const SignupsTable = ({ isReadOnly = false }: { isReadOnly?: boolean }) => {
   }, {});
 
   const exportCSV = () => {
-    const headers = ['Name', 'Email', 'Type', 'Tier', 'Referral Code', 'Referrals', 'Position', 'Referred By', 'UTM Source', 'Signed Up'];
+    const headers = ['Name', 'Email', 'Type', 'Tier', 'Referral Code', 'Referrals', 'Position', 'Referred By', 'UTM Source', 'Signup Source', 'Business Name', 'Business Type', 'Business Registered', 'Signed Up'];
     const rows = filtered.map((s) => [
       s.full_name, s.email, s.user_type, s.tier, s.referral_code || '', s.referrals_count,
-      s.waitlist_position || '', s.referred_by || '', s.utm_source || '', new Date(s.created_at).toLocaleDateString(),
+      s.waitlist_position || '', s.referred_by || '', s.utm_source || '', s.signup_source || '',
+      s.business_name || '', s.business_type || '', s.business_registered != null ? (s.business_registered ? 'Yes' : 'No') : '',
+      new Date(s.created_at).toLocaleDateString(),
     ]);
     const csv = [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
