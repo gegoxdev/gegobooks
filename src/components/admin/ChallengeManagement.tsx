@@ -387,15 +387,26 @@ const ChallengeManagement = ({ isReadOnly }: { isReadOnly: boolean }) => {
             </select>
           </div>
           <textarea placeholder="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} className="w-full font-body text-sm border border-border rounded-lg px-3 py-2 bg-surface text-foreground" rows={2} />
-          <div className="grid md:grid-cols-2 gap-3">
-            <div>
-              <label className="font-body text-xs text-muted">Downloadable File URL (for contestants)</label>
-              <input placeholder="https://drive.google.com/..." value={form.attachment_url} onChange={e => setForm({ ...form, attachment_url: e.target.value })} className="w-full font-body text-sm border border-border rounded-lg px-3 py-2 bg-surface text-foreground" />
-            </div>
-            <div>
-              <label className="font-body text-xs text-muted">File Name (e.g. "GegoBooks Logo Pack")</label>
-              <input placeholder="GegoBooks Logo Pack" value={form.attachment_name} onChange={e => setForm({ ...form, attachment_name: e.target.value })} className="w-full font-body text-sm border border-border rounded-lg px-3 py-2 bg-surface text-foreground" />
-            </div>
+          <div className="space-y-2">
+            <label className="font-body text-xs text-muted font-semibold">Downloadable Files (Google Drive links for contestants)</label>
+            {form.attachments.map((att, idx) => (
+              <div key={idx} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                <input placeholder="https://drive.google.com/..." value={att.url} onChange={e => {
+                  const updated = [...form.attachments]; updated[idx] = { ...updated[idx], url: e.target.value }; setForm({ ...form, attachments: updated });
+                }} className="w-full font-body text-sm border border-border rounded-lg px-3 py-2 bg-surface text-foreground" />
+                <input placeholder="File name (e.g. GegoBooks Logo)" value={att.name} onChange={e => {
+                  const updated = [...form.attachments]; updated[idx] = { ...updated[idx], name: e.target.value }; setForm({ ...form, attachments: updated });
+                }} className="w-full font-body text-sm border border-border rounded-lg px-3 py-2 bg-surface text-foreground" />
+                {form.attachments.length > 1 && (
+                  <button onClick={() => setForm({ ...form, attachments: form.attachments.filter((_, i) => i !== idx) })} className="text-destructive hover:opacity-70" title="Remove">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+            <button onClick={() => setForm({ ...form, attachments: [...form.attachments, { url: '', name: '' }] })} className="flex items-center gap-1 font-body text-xs text-primary hover:underline font-semibold">
+              <Plus className="w-3 h-3" /> Add another file
+            </button>
           </div>
           <div className="flex gap-2">
             <button onClick={handleCreateOrUpdateWeek} className="bg-primary text-primary-foreground font-body text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90">
